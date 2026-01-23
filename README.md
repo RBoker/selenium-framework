@@ -2,35 +2,37 @@
 
 Framework de automação de testes em **Java + Selenium**, projetado para separar com clareza:
 
-- **Testes unitários do framework**
-- **Testes de UI (end-to-end)**
+* **Testes unitários do framework**
+* **Testes de UI (end-to-end)**
 
 com **execução isolada**, **controle de logging**, **evidência automática em falha** e **gate de cobertura com JaCoCo**.
+
+> 🎯 Objetivo principal: servir como **base sólida, limpa e evolutiva** para projetos de automação UI em Java, sem misturar responsabilidades e sem comprometer cobertura e qualidade do código.
 
 ---
 
 ## 📌 Principais características
 
-- ✅ Java 17
-- ✅ Selenium 4
-- ✅ Maven (Surefire + Failsafe)
-- ✅ JUnit 5 (testes unitários)
-- ✅ TestNG + Cucumber (testes de UI)
-- ✅ JaCoCo com **gate de cobertura (70%)**
-- ✅ Execução separada por **Maven Profiles**
-- ✅ Evidência automática (screenshot) em falha
-- ✅ Page Objects com `BasePage`
-- ✅ `DriverManager` seguro (sem driver zumbi)
-- ✅ `WaitFactory` centralizado
-- ✅ Logging controlado (Logback + logging.properties)
-- ✅ Logs limpos (sem warnings ruidosos do Selenium)
+* ✅ Java 17 (LTS)
+* ✅ Selenium 4
+* ✅ Maven (Surefire + Failsafe)
+* ✅ JUnit 5 (testes unitários)
+* ✅ TestNG + Cucumber (testes de UI)
+* ✅ JaCoCo com **gate de cobertura (70%)**
+* ✅ Execução separada por **Maven Profiles**
+* ✅ Evidência automática (screenshot) em falha
+* ✅ Page Objects com `BasePage`
+* ✅ `DriverManager` seguro (sem driver zumbi)
+* ✅ `WaitFactory` centralizado
+* ✅ `ElementActions` para interações resilientes
+* ✅ Logging controlado (Logback + logging.properties)
+* ✅ Logs limpos (sem warnings ruidosos do Selenium)
 
 ---
 
 ## 🧱 Estrutura do projeto
 
 ```
-
 src
 ├── main
 │   └── java
@@ -46,32 +48,31 @@ src
 │       └── bdd           # Steps e runners Cucumber
 │
 └── resources
-├── features         # Arquivos .feature (Cucumber)
-├── logback-test.xml # Logging SLF4J / Logback
-└── logging.properties # Logging JUL (Selenium / WebDriver)
-
-````
+├── features              # Arquivos .feature (Cucumber)
+├── logback-test.xml      # Logging SLF4J / Logback
+└── logging.properties    # Logging JUL (Selenium / WebDriver)
+```
 
 ---
 
 ## ⚙️ Configuração via `-D`
 
-O framework é configurado **exclusivamente por System Properties**, sem recompilar.
+O framework é configurado **exclusivamente por System Properties**, evitando arquivos de configuração rígidos e recompilações desnecessárias.
 
-| Propriedade | Descrição | Default |
-|------------|----------|---------|
-| `baseUrl` | URL base da aplicação | `https://example.com` |
-| `browser` | Browser (`chrome`, `firefox`, `edge`) | `chrome` |
-| `headless` | Executa em modo headless | `false` |
-| `remote` | Usa Selenium Grid | `false` |
-| `remoteUrl` | URL do Grid | `http://localhost:4444/wd/hub` |
-| `timeout` | Timeout padrão (segundos) | `10` |
+| Propriedade | Descrição                             | Default                        |
+| ----------- | ------------------------------------- | ------------------------------ |
+| `baseUrl`   | URL base da aplicação                 | `https://example.com`          |
+| `browser`   | Browser (`chrome`, `firefox`, `edge`) | `chrome`                       |
+| `headless`  | Executa em modo headless              | `false`                        |
+| `remote`    | Usa Selenium Grid                     | `false`                        |
+| `remoteUrl` | URL do Grid                           | `http://localhost:4444/wd/hub` |
+| `timeout`   | Timeout padrão (segundos)             | `10`                           |
 
 Exemplo:
 
 ```bash
   mvn test -Dtimeout=15
-````
+```
 
 ---
 
@@ -110,8 +111,8 @@ target/site/jacoco/index.html
     * **TestNG**
     * **Cucumber**
 * ▶️ Executados pelo **maven-failsafe-plugin**
-* 🔒 Isolados dos testes unitários
-* 🧹 Não afetam JaCoCo
+* 🔒 Totalmente isolados dos testes unitários
+* 🧹 Não afetam métricas de cobertura
 
 Execução:
 
@@ -126,7 +127,7 @@ Execução:
 
 ## 📋 Logging
 
-O framework usa **dois níveis de logging**, corretamente separados:
+O framework adota **separação explícita de responsabilidades de logging**.
 
 ### 🔹 Logback (SLF4J)
 
@@ -156,7 +157,7 @@ Responsável por:
 * WebDriver
 * ChromeDriver / GeckoDriver
 
-➡️ Isso elimina warnings ruidosos como:
+➡️ Benefício direto: eliminação de warnings ruidosos como:
 
 * `Unable to find CDP implementation`
 * Logs excessivos do Selenium
@@ -183,10 +184,11 @@ target/screenshots
 
 ## 🧩 Page Objects
 
-O framework utiliza **Page Objects** com `BasePage`, separando claramente:
+O framework utiliza **Page Objects** com `BasePage`, garantindo:
 
-* **Teste** → o que validar
-* **Página** → como interagir
+* Clareza de responsabilidades
+* Reuso
+* Leitura fluida dos testes
 
 Exemplo:
 
@@ -245,11 +247,18 @@ Execução:
 * Execução paralela (TestNG)
 * Retry controlado para UI
 * Integração CI (GitHub Actions / GitLab CI)
+* Relatórios HTML para UI (Cucumber)
+
+---
+
+## 🤝 Contribuição
+
+Sugestões, issues e PRs são bem-vindos.
+
+> Mantenha o padrão de separação entre **framework**, **testes unitários** e **testes de UI**.
 
 ---
 
 ## 📄 Licença
 
 Uso livre para fins educacionais e profissionais.
-
-
