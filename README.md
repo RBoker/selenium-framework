@@ -1,21 +1,29 @@
 # Selenium Framework (Java)
 
-Framework de automação de testes em **Java + Selenium**, estruturado para separar claramente **testes unitários do framework** e **testes de UI (end-to-end)**, com **execução por profiles**, **evidências em falha** e **gate de cobertura com JaCoCo**.
+Framework de automação de testes em **Java + Selenium**, projetado para separar com clareza:
+
+- **Testes unitários do framework**
+- **Testes de UI (end-to-end)**
+
+com **execução isolada**, **controle de logging**, **evidência automática em falha** e **gate de cobertura com JaCoCo**.
 
 ---
 
 ## 📌 Principais características
 
-- ✅ Selenium 4
 - ✅ Java 17
-- ✅ Maven
-- ✅ TestNG (testes de UI)
-- ✅ JUnit 5 (testes unitários do framework)
+- ✅ Selenium 4
+- ✅ Maven (Surefire + Failsafe)
+- ✅ JUnit 5 (testes unitários)
+- ✅ TestNG + Cucumber (testes de UI)
 - ✅ JaCoCo com **gate de cobertura (70%)**
 - ✅ Execução separada por **Maven Profiles**
 - ✅ Evidência automática (screenshot) em falha
-- ✅ Page Objects (BasePage)
-- ✅ Gerenciamento seguro de WebDriver (sem driver zumbi)
+- ✅ Page Objects com `BasePage`
+- ✅ `DriverManager` seguro (sem driver zumbi)
+- ✅ `WaitFactory` centralizado
+- ✅ Logging controlado (Logback + logging.properties)
+- ✅ Logs limpos (sem warnings ruidosos do Selenium)
 
 ---
 
@@ -27,55 +35,63 @@ src
 ├── main
 │   └── java
 │       └── com.rboker.automation
-│           ├── config        # Leitura de configs (-D)
-│           └── core          # DriverManager, ScreenshotUtil, etc.
+│           ├── config        # Leitura de System Properties (-D)
+│           └── core          # DriverManager, WaitFactory, ElementActions, ScreenshotUtil
 │
 └── test
-└── java
-└── com.rboker.automation.tests
-├── unit          # Testes unitários do framework (JUnit 5)
-└── ui            # Testes de UI (TestNG + Selenium)
+├── java
+│   └── com.rboker.automation.tests
+│       ├── unit          # Testes unitários do framework (JUnit 5)
+│       ├── ui            # Testes de UI (Selenium + TestNG)
+│       └── bdd           # Steps e runners Cucumber
+│
+└── resources
+├── features         # Arquivos .feature (Cucumber)
+├── logback-test.xml # Logging SLF4J / Logback
+└── logging.properties # Logging JUL (Selenium / WebDriver)
 
 ````
 
 ---
 
-## ⚙️ Configurações via `-D`
+## ⚙️ Configuração via `-D`
 
-O framework é configurado exclusivamente por **System Properties**, sem recompilar:
+O framework é configurado **exclusivamente por System Properties**, sem recompilar.
 
 | Propriedade | Descrição | Default |
 |------------|----------|---------|
-| `baseUrl` | URL base do sistema | `https://example.com` |
+| `baseUrl` | URL base da aplicação | `https://example.com` |
 | `browser` | Browser (`chrome`, `firefox`, `edge`) | `chrome` |
-| `headless` | Executa browser em modo headless | `false` |
+| `headless` | Executa em modo headless | `false` |
 | `remote` | Usa Selenium Grid | `false` |
 | `remoteUrl` | URL do Grid | `http://localhost:4444/wd/hub` |
 | `timeout` | Timeout padrão (segundos) | `10` |
 
 Exemplo:
+
 ```bash
   mvn test -Dtimeout=15
 ````
+
 ---
 
 ## 🧪 Tipos de testes
 
 ### 🔹 Testes Unitários (framework)
 
-* Local: `com.rboker.automation.tests.unit`
-* Framework: **JUnit 5**
-* Executados por padrão
-* Cobertos por **JaCoCo**
-* **Gate de cobertura: 70%**
+* 📁 Pacote: `com.rboker.automation.tests.unit`
+* 🧪 Framework: **JUnit 5**
+* ▶️ Executados pelo **maven-surefire-plugin**
+* 📊 Cobertos por **JaCoCo**
+* 🚦 Gate de cobertura: **70%**
 
 Execução:
 
 ```bash
-  mvn test
+  mvn clean test
 ```
 
-Relatório:
+Relatório de cobertura:
 
 ```
 target/site/jacoco/index.html
@@ -83,39 +99,82 @@ target/site/jacoco/index.html
 
 ---
 
-### 🔹 Testes de UI (Selenium)
+### 🔹 Testes de UI (Selenium + Cucumber)
 
-* Local: `com.rboker.automation.tests.ui`
-* Framework: **TestNG**
-* Executados via **profile Maven**
-* Isolados dos unit tests
+* 📁 Pacotes:
+
+    * `com.rboker.automation.tests.ui`
+    * `com.rboker.automation.tests.bdd`
+* 🧪 Frameworks:
+
+    * **TestNG**
+    * **Cucumber**
+* ▶️ Executados pelo **maven-failsafe-plugin**
+* 🔒 Isolados dos testes unitários
+* 🧹 Não afetam JaCoCo
 
 Execução:
 
 ```bash
-mvn clean verify -Pui \
-  -DbaseUrl=https://www.wikipedia.org -Dbrowser=chrome
-```
-
-Suite TestNG:
-
-```
-src/test/resources/testng-ui.xml
+  mvn clean verify -Pui \
+    -DbaseUrl=https://www.wikipedia.org \
+    -Dbrowser=chrome \
+    -Dheadless=false
 ```
 
 ---
 
-## 📸 Evidências em falha
+## 📋 Logging
 
-* Em qualquer falha de teste UI:
+O framework usa **dois níveis de logging**, corretamente separados:
 
-    * Screenshot é capturado automaticamente
-    * Arquivos são salvos em:
+### 🔹 Logback (SLF4J)
 
-      ```
-      target/screenshots
-      ```
-* Nome do arquivo inclui:
+Arquivo:
+
+```
+src/test/resources/logback-test.xml
+```
+
+Responsável por:
+
+* Logs do framework
+* Logs de testes
+* Logs de negócio
+
+### 🔹 logging.properties (JUL)
+
+Arquivo:
+
+```
+src/test/resources/logging.properties
+```
+
+Responsável por:
+
+* Selenium
+* WebDriver
+* ChromeDriver / GeckoDriver
+
+➡️ Isso elimina warnings ruidosos como:
+
+* `Unable to find CDP implementation`
+* Logs excessivos do Selenium
+
+---
+
+## 📸 Evidências em falha (UI)
+
+Em qualquer falha de teste UI:
+
+* 📷 Screenshot automático
+* 📁 Diretório:
+
+```
+target/screenshots
+```
+
+* 🧾 Nome do arquivo contém:
 
     * Nome do teste (sanitizado)
     * Timestamp
@@ -124,7 +183,7 @@ src/test/resources/testng-ui.xml
 
 ## 🧩 Page Objects
 
-O framework utiliza **Page Objects** com `BasePage` para separar:
+O framework utiliza **Page Objects** com `BasePage`, separando claramente:
 
 * **Teste** → o que validar
 * **Página** → como interagir
@@ -133,16 +192,15 @@ Exemplo:
 
 ```java
 new WikipediaHomePage(driver)
-    .search("Selenium")
-    .heading();
+    .search("Selenium");
 ```
 
 ---
 
 ## 🚦 Cobertura de código (JaCoCo)
 
-* Cobertura aplicada **somente aos testes unitários**
-* Classes fortemente acopladas ao Selenium são excluídas do gate
+* Aplicada **somente aos testes unitários**
+* Classes fortemente acopladas ao Selenium são excluídas
 * Build falha automaticamente se cobertura < **70%**
 
 Execução:
@@ -156,10 +214,12 @@ Execução:
 ## 🧹 Boas práticas adotadas
 
 * WebDriver sempre finalizado (`quit()` garantido)
-* Test doubles (fakes) para Selenium em unit tests
-* Sem dependência de browser nos testes unitários
+* `DriverManager` centralizado
+* `WaitFactory` reutilizável
+* `ElementActions` encapsula waits e interações
+* Testes unitários sem dependência de browser
 * `.gitignore` preparado para Maven, IDEs e JaCoCo
-* Código preparado para evolução (injeção, refactor incremental)
+* Arquitetura preparada para evolução incremental
 
 ---
 
@@ -169,6 +229,7 @@ Execução:
 * Selenium 4
 * Maven
 * TestNG
+* Cucumber
 * JUnit 5
 * Mockito
 * AssertJ
@@ -179,15 +240,16 @@ Execução:
 
 ## 🚀 Próximos passos sugeridos
 
-* Refatorar `WaitFactory` para reduzir acoplamento
 * Tornar `ElementActions` instanciável
-* Reduzir gradualmente excludes do JaCoCo
-* Adicionar execução paralela
-* Integrar com CI (GitHub Actions / GitLab CI)
+* Reduzir gradualmente exclusões do JaCoCo
+* Execução paralela (TestNG)
+* Retry controlado para UI
+* Integração CI (GitHub Actions / GitLab CI)
 
 ---
 
 ## 📄 Licença
 
 Uso livre para fins educacionais e profissionais.
+
 
