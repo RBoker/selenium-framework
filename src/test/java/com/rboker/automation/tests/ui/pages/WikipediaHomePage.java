@@ -2,6 +2,7 @@ package com.rboker.automation.tests.ui.pages;
 
 import com.rboker.automation.core.ElementActions;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 
 /**
@@ -9,16 +10,17 @@ import org.openqa.selenium.WebDriver;
  */
 public class WikipediaHomePage extends BasePage {
 
-    private final By searchInput = By.id("searchInput");
-    private final By searchButton = By.cssSelector("button[type='submit']");
+    // Para en.wikipedia.org, este name costuma ser mais estável que o id.
+    // Se quiser manter o id, pode deixar By.id("searchInput") também.
+    private final By searchInput = By.name("search");
 
     public WikipediaHomePage(WebDriver driver) {
         super(driver);
     }
 
     public WikipediaResultsPage search(String text) {
-        ElementActions.type(searchInput, text);
-        ElementActions.click(searchButton);
+        // Evita clicar no botão (que re-renderiza e gera stale). ENTER é mais estável.
+        ElementActions.sendKeys(searchInput, text, Keys.ENTER);
         return new WikipediaResultsPage(driver);
     }
 }
