@@ -1,6 +1,6 @@
 package com.rboker.automation.core;
 
-import com.rboker.automation.config.Config;
+import com.rboker.automation.config.FrameworkConfig;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.FluentWait;
@@ -24,7 +24,7 @@ public final class WaitFactory {
      */
     public static FluentWait<WebDriver> defaultWait() {
         return new FluentWait<>(DriverManager.getDriver())
-                .withTimeout(Duration.ofSeconds(Config.timeoutSeconds()))
+                .withTimeout(Duration.ofSeconds(FrameworkConfig.timeoutSeconds()))
                 .pollingEvery(Duration.ofMillis(200))
                 .ignoring(StaleElementReferenceException.class);
     }

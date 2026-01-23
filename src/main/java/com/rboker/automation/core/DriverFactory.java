@@ -1,6 +1,6 @@
 package com.rboker.automation.core;
 
-import com.rboker.automation.config.Config;
+import com.rboker.automation.config.FrameworkConfig;
 import org.openqa.selenium.MutableCapabilities;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -21,14 +21,14 @@ public final class DriverFactory {
     }
 
     public static WebDriver createDriver() {
-        String browser = Config.browser().toLowerCase();
-        boolean headless = Config.headless();
+        String browser = FrameworkConfig.browser().toLowerCase();
+        boolean headless = FrameworkConfig.headless();
 
         try {
             // Execução remota (Grid)
-            if (Config.remote()) {
+            if (FrameworkConfig.remote()) {
                 MutableCapabilities caps = buildCapabilities(browser, headless);
-                WebDriver driver = new RemoteWebDriver(new URL(Config.remoteUrl()), caps);
+                WebDriver driver = new RemoteWebDriver(new URL(FrameworkConfig.remoteUrl()), caps);
                 applyDefaults(driver);
                 return driver;
             }
@@ -44,7 +44,7 @@ public final class DriverFactory {
             return driver;
 
         } catch (Exception e) {
-            throw new RuntimeException("Falha ao criar WebDriver. browser=" + browser + ", remote=" + Config.remote(), e);
+            throw new RuntimeException("Falha ao criar WebDriver. browser=" + browser + ", remote=" + FrameworkConfig.remote(), e);
         }
     }
 

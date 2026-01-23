@@ -1,6 +1,6 @@
 package com.rboker.automation.tests.ui;
 
-import com.rboker.automation.config.Config;
+import com.rboker.automation.config.FrameworkConfig;
 import com.rboker.automation.core.DriverFactory;
 import com.rboker.automation.core.DriverManager;
 import com.rboker.automation.core.ScreenshotUtil;
@@ -43,7 +43,7 @@ public abstract class BaseTest {
 
     private String safeBaseUrl() {
         try {
-            String url = Config.baseUrl(); // se não existir no seu Config, me diga o método equivalente
+            String url = FrameworkConfig.baseUrl(); // se não existir no seu Config, me diga o método equivalente
             return (url == null || url.isBlank()) ? null : url;
         } catch (Exception ignored) {
             // Se seu Config ainda não tem baseUrl(), não quebra a execução.
