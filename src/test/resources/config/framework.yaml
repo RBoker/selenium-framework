@@ -1,0 +1,21 @@
+framework:
+  name: selenium-framework
+  timeout:
+    defaultSeconds: 15
+    pageLoadSeconds: 30
+
+execution:
+  browser: chrome
+  headless: false
+  window:
+    maximize: true
+
+application:
+  baseUrl: https://www.wikipedia.org
+
+logging:
+  level: INFO
+
+selenium:
+  implicitWaitSeconds: 0
+  explicitWaitSeconds: 10
