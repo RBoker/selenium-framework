@@ -13,6 +13,7 @@ public class WikipediaResultsPage extends BasePage {
 
     public WikipediaResultsPage(WebDriver driver) {
         super(driver);
+        ElementActions.waitVisible(firstHeading);
     }
 
     public String heading() {
