@@ -38,6 +38,10 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.16</logback.version>
 
+        <!-- Allure -->
+        <allure.version>2.29.0</allure.version>
+        <allure.maven.version>2.12.0</allure.maven.version>
+
         <!-- Plugins -->
         <compiler.version>3.13.0</compiler.version>
         <surefire.version>3.5.2</surefire.version>
@@ -160,6 +164,22 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Allure: integração com Cucumber 7 -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-cucumber7-jvm</artifactId>
+            <version>${allure.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Allure: integração com JUnit Platform -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit-platform</artifactId>
+            <version>${allure.version}</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <!-- ========================================================= -->
@@ -193,7 +213,7 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
-                            <!-- IMPORTANT: injeta em "argLine" (não em jacocoArgLine) -->
+                            <!-- injeta em "argLine" (late evaluation nos plugins) -->
                             <propertyName>argLine</propertyName>
                             <destFile>${project.build.directory}/jacoco.exec</destFile>
                             <append>true</append>
@@ -228,10 +248,7 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
-
-                    <!-- IMPORTANT: @{argLine} = late evaluation (pega o javaagent do JaCoCo) -->
                     <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
-
                     <includes>
                         <include>**/*UnitTest.java</include>
                     </includes>
@@ -252,6 +269,13 @@
             <build>
                 <plugins>
 
+                    <!-- Allure Maven Plugin (para allure:report / allure:serve) -->
+                    <plugin>
+                        <groupId>io.qameta.allure</groupId>
+                        <artifactId>allure-maven</artifactId>
+                        <version>${allure.maven.version}</version>
+                    </plugin>
+
                     <!-- Disable unit tests -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -270,8 +294,12 @@
                         <configuration>
                             <useModulePath>false</useModulePath>
 
-                            <!-- IMPORTANT: também usa @{argLine} -->
                             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
+
+                            <!-- garante saída do Allure em target/allure-results -->
+                            <systemPropertyVariables>
+                                <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                            </systemPropertyVariables>
 
                             <!-- roda APENAS o runner oficial -->
                             <includes>
