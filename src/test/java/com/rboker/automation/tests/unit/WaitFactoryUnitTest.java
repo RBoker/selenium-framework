@@ -1,7 +1,7 @@
 package com.rboker.automation.tests.unit;
 
 import com.rboker.automation.core.DriverManager;
-import com.rboker.automation.core.WaitFactory;
+import com.rboker.automation.factories.WaitFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

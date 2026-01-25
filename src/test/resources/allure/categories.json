@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Falhas de UI (assert/validação)",
+    "matchedStatuses": ["failed"]
+  },
+  {
+    "name": "Bugs/Erros inesperados",
+    "matchedStatuses": ["broken"]
+  }
+]

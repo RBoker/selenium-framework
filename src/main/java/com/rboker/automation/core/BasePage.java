@@ -17,4 +17,20 @@ public abstract class BasePage {
     protected BasePage(WebDriver driver) {
         this.driver = driver;
     }
+
+    /**
+     * Retorna a URL atual do navegador.
+     * Útil para asserts e validações em Page Objects.
+     */
+    public String currentUrl() {
+        return driver.getCurrentUrl();
+    }
+
+    /**
+     * Retorna o título atual da página.
+     * Útil para asserts rápidos e diagnósticos.
+     */
+    public String title() {
+        return driver.getTitle();
+    }
 }

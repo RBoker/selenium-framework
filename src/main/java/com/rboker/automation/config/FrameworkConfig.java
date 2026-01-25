@@ -11,14 +11,43 @@ import java.util.Map;
  *
  * Prioridade:
  * 1) System Properties (-D)
- * 2) YAML: src/test/resources/config/framework.yaml
- * 3) Fallback hardcoded (segurança)
+ * 2) YAML por projeto (se -Dproject informado): src/test/resources/config/projects/<project>.yaml
+ * 3) YAML padrão: src/test/resources/config/framework.yaml
+ * 4) Fallback hardcoded (segurança)
  *
- * Ex.: mvn verify -Pui -DbaseUrl=https://site -Dbrowser=chrome -Dheadless=true
+ * Ex. (single-project):
+ * mvn verify -Pui -DbaseUrl=https://site -Dbrowser=chrome -Dheadless=true
+ *
+ * Ex. (multi-project):
+ * mvn verify -Pui -Dproject=blog-agi
  */
 public final class FrameworkConfig {
+
     private static final boolean YAML_ENABLED = Boolean.parseBoolean(System.getProperty("yaml.enabled", "true"));
-    private static final String YAML_PATH = "config/framework.yaml";
+
+    /**
+     * YAML padrão (legado / single-project).
+     */
+    private static final String DEFAULT_YAML_PATH = "config/framework.yaml";
+
+    /**
+     * Diretório de YAMLs por projeto (multi-projeto).
+     * Ex.: config/projects/blog-agi.yaml
+     */
+    private static final String PROJECTS_YAML_DIR = "config/projects";
+
+    /**
+     * Nome do projeto selecionado via -Dproject=<nome>.
+     * Se não informado, permanece no comportamento legado.
+     */
+    private static final String PROJECT = System.getProperty("project");
+
+    /**
+     * Carrega o YAML na inicialização (mantém comportamento atual de "config estática").
+     * Ordem:
+     * - se project informado e o arquivo existir -> usa YAML do projeto
+     * - caso contrário -> usa YAML padrão
+     */
     private static final Map<String, Object> YAML_CONFIG = loadYaml();
 
     private FrameworkConfig() {
@@ -26,31 +55,43 @@ public final class FrameworkConfig {
     }
 
     public static String baseUrl() {
+        // Mantém sysprop: baseUrl (legado)
+        // YAML: application.baseUrl
         return getString("baseUrl",
                 yamlString("application", "baseUrl", "https://example.com"));
     }
 
     public static String browser() {
+        // Mantém sysprop: browser (legado)
+        // YAML: execution.browser
         return getString("browser",
                 yamlString("execution", "browser", "chrome")); // chrome|firefox|edge
     }
 
     public static boolean headless() {
+        // Mantém sysprop: headless (legado)
+        // YAML: execution.headless
         return getBoolean("headless",
                 yamlBoolean("execution", "headless", false));
     }
 
     public static boolean remote() {
+        // Mantém sysprop: remote (legado)
+        // YAML: execution.remote
         return getBoolean("remote",
                 yamlBoolean("execution", "remote", false));
     }
 
     public static String remoteUrl() {
+        // Mantém sysprop: remoteUrl (legado)
+        // YAML: execution.remoteUrl
         return getString("remoteUrl",
                 yamlString("execution", "remoteUrl", "http://localhost:4444/wd/hub"));
     }
 
     public static int timeoutSeconds() {
+        // Mantém sysprop: timeout (legado)
+        // YAML: timeouts.seconds
         return getInt("timeout",
                 yamlInt("timeouts", "seconds", 10), 10);
     }
@@ -113,14 +154,30 @@ public final class FrameworkConfig {
         if (!YAML_ENABLED) {
             return Collections.emptyMap();
         }
-        try (InputStream is = FrameworkConfig.class.getClassLoader().getResourceAsStream(YAML_PATH)) {
+
+        // 1) tenta YAML do projeto (se -Dproject informado)
+        if (PROJECT != null && !PROJECT.isBlank()) {
+            String projectPath = PROJECTS_YAML_DIR + "/" + PROJECT.trim() + ".yaml";
+            Map<String, Object> projectYaml = tryLoadYaml(projectPath);
+            if (!projectYaml.isEmpty()) {
+                return projectYaml;
+            }
+            // Se não existir ou falhar, segue com padrão (não quebra nada)
+        }
+
+        // 2) YAML padrão (legado)
+        return tryLoadYaml(DEFAULT_YAML_PATH);
+    }
+
+    private static Map<String, Object> tryLoadYaml(String path) {
+        try (InputStream is = FrameworkConfig.class.getClassLoader().getResourceAsStream(path)) {
             if (is == null) {
                 return Collections.emptyMap();
             }
-            return new Yaml().load(is);
+            Map<String, Object> loaded = new Yaml().load(is);
+            return loaded == null ? Collections.emptyMap() : loaded;
         } catch (Exception e) {
             return Collections.emptyMap();
         }
     }
-
 }

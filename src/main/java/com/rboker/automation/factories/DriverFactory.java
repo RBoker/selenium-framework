@@ -1,4 +1,4 @@
-package com.rboker.automation.core;
+package com.rboker.automation.factories;
 
 import com.rboker.automation.config.FrameworkConfig;
 import org.openqa.selenium.MutableCapabilities;
