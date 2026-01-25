@@ -1,6 +1,7 @@
-package com.rboker.automation.core;
+package com.rboker.automation.factories;
 
 import com.rboker.automation.config.FrameworkConfig;
+import com.rboker.automation.core.DriverManager;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.ui.FluentWait;

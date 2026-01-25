@@ -18,7 +18,6 @@
         <maven.compiler.release>17</maven.compiler.release>
 
         <selenium.version>4.25.0</selenium.version>
-        <testng.version>7.10.2</testng.version>
 
         <!-- JUnit -->
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
@@ -47,6 +46,10 @@
         <surefire.version>3.5.2</surefire.version>
         <failsafe.version>3.5.2</failsafe.version>
         <jacoco.version>0.8.12</jacoco.version>
+
+        <!-- ✅ Permite continuar o build quando UI falhar (CLI: -Dfailsafe.testFailureIgnore=true) -->
+        <failsafe.testFailureIgnore>false</failsafe.testFailureIgnore>
+
     </properties>
 
     <!-- ========================================================= -->
@@ -80,14 +83,6 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <!-- (Opcional) TestNG – pode coexistir -->
-        <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>${testng.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- Cucumber -->
@@ -205,7 +200,6 @@
                 <version>${jacoco.version}</version>
                 <executions>
 
-                    <!-- Instrumenta ANTES do Surefire/Failsafe -->
                     <execution>
                         <id>jacoco-prepare-agent</id>
                         <phase>initialize</phase>
@@ -213,14 +207,12 @@
                             <goal>prepare-agent</goal>
                         </goals>
                         <configuration>
-                            <!-- injeta em "argLine" (late evaluation nos plugins) -->
                             <propertyName>argLine</propertyName>
                             <destFile>${project.build.directory}/jacoco.exec</destFile>
                             <append>true</append>
                         </configuration>
                     </execution>
 
-                    <!-- Report no mvn test -->
                     <execution>
                         <id>jacoco-report-on-test</id>
                         <phase>test</phase>
@@ -229,7 +221,6 @@
                         </goals>
                     </execution>
 
-                    <!-- Mantém compatível com mvn verify -->
                     <execution>
                         <id>jacoco-report-on-verify</id>
                         <phase>verify</phase>
@@ -294,21 +285,19 @@
                         <configuration>
                             <useModulePath>false</useModulePath>
 
+                            <!-- ✅ Permite ignorar falhas (CLI: -Dfailsafe.testFailureIgnore=true) -->
+                            <testFailureIgnore>${failsafe.testFailureIgnore}</testFailureIgnore>
+
                             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
 
-                            <!-- garante saída do Allure em target/allure-results -->
                             <systemPropertyVariables>
                                 <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
                             </systemPropertyVariables>
 
-                            <!-- roda APENAS o runner oficial -->
                             <includes>
                                 <include>**/RunCucumberTest.java</include>
                             </includes>
 
-                            <excludes>
-                                <exclude>**/FailingEvidenceUiTest.java</exclude>
-                            </excludes>
                         </configuration>
 
                         <executions>

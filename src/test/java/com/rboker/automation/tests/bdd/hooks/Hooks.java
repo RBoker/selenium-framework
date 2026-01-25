@@ -1,7 +1,7 @@
 package com.rboker.automation.tests.bdd.hooks;
 
 import com.rboker.automation.config.FrameworkConfig;
-import com.rboker.automation.core.DriverFactory;
+import com.rboker.automation.factories.DriverFactory;
 import com.rboker.automation.core.DriverManager;
 import com.rboker.automation.core.ScreenshotUtil;
 import io.cucumber.java.After;
@@ -11,6 +11,7 @@ import org.openqa.selenium.WebDriver;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
+import com.rboker.automation.support.AllureEnvironmentWriter;
 
 import java.io.ByteArrayInputStream;
 
@@ -20,6 +21,8 @@ public class Hooks {
 
     @Before("@ui")
     public void beforeScenario() {
+        AllureEnvironmentWriter.writeOnce();
+
         WebDriver driver = DriverFactory.createDriver();
         DriverManager.setDriver(driver);
 

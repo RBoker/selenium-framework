@@ -1,8 +1,9 @@
-package com.rboker.automation.tests.ui.pages;
+package com.rboker.automation.ui.pages.wikipedia;
 
 import com.rboker.automation.core.ElementActions;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import com.rboker.automation.core.BasePage;
 
 /**
  * Page Object da página de resultados/artigo do Wikipedia.

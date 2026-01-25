@@ -1,8 +1,9 @@
 package com.rboker.automation.tests.bdd.steps.wikipedia;
 
 import com.rboker.automation.factories.Pages;
-import com.rboker.automation.pages.WikipediaArticlePage;
+import com.rboker.automation.core.DriverManager;
 import com.rboker.automation.support.TestConfig;
+import com.rboker.automation.ui.pages.wikipedia.WikipediaPage;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
 import io.cucumber.java.pt.Então;
@@ -14,23 +15,26 @@ import org.junit.jupiter.api.Assertions;
  */
 public class WikipediaSearchSteps {
 
-    private WikipediaArticlePage articlePage;
+    private WikipediaPage wikiPage;
 
     @Dado("que acesso a home da Wikipedia")
     public void queAcessoAHomeDaWikipedia() {
-        Pages.wikipediaHome()
+        wikiPage = Pages.wikipedia()
                 .open(TestConfig.baseUrl());
     }
 
     @Quando("eu pesquisar pelo termo {string}")
     public void euPesquisarPeloTermo(String termo) {
-        articlePage = Pages.wikipediaHome()
-                .searchFor(termo);
+        // Reaproveita a instância aberta; se não existir, cria com o driver atual
+        if (wikiPage == null) {
+            wikiPage = new WikipediaPage(DriverManager.getDriver()).open(TestConfig.baseUrl());
+        }
+        wikiPage.search(termo);
     }
 
     @Então("devo ver o título do artigo {string}")
     public void devoVerOTituloDoArtigo(String tituloEsperado) {
-        Assertions.assertEquals(tituloEsperado, articlePage.getArticleTitle());
+        Assertions.assertEquals(tituloEsperado, wikiPage.heading());
     }
 
     @Quando("eu pesquiso por {string}")
@@ -42,12 +46,16 @@ public class WikipediaSearchSteps {
 
     @Então("devo ver resultados relacionados a {string}")
     public void devo_ver_resultados_relacionados_a(String termoEsperado) {
-        String titulo = articlePage.getArticleTitle();
+        String titulo = wikiPage.heading();
         Assertions.assertTrue(
                 titulo != null && titulo.toLowerCase().contains(termoEsperado.toLowerCase()),
                 "O título do artigo deveria conter o termo pesquisado. Título atual: " + titulo
         );
+
+        // Opcional (mas útil): valida que estamos em URL de wiki/artigo/resultado
+        Assertions.assertTrue(
+                wikiPage.isWikiOrSearchUrl(),
+                "URL não parece ser de artigo/resultado da Wikipedia. URL: " + wikiPage.currentUrl()
+        );
     }
-
-
 }

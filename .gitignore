@@ -38,3 +38,8 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Allure local artifacts
+.allure/
+allure-results/
+**/allure-results/
