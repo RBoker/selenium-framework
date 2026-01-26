@@ -25,6 +25,24 @@ public final class FrameworkConfig {
 
     private static final boolean YAML_ENABLED = Boolean.parseBoolean(System.getProperty("yaml.enabled", "true"));
 
+    public static int uiTimeoutSeconds() {
+        // Sysprop: uiTimeout (novo) ou uiTimeoutSeconds (compat)
+        // YAML: timeouts.uiSeconds
+        String raw = System.getProperty("uiTimeout");
+        if (raw == null || raw.isBlank()) {
+            raw = System.getProperty("uiTimeoutSeconds");
+        }
+        if (raw != null && !raw.isBlank()) {
+            try {
+                return Integer.parseInt(raw.trim());
+            } catch (NumberFormatException ignored) {
+                return 25;
+            }
+        }
+        return yamlInt("timeouts", "uiSeconds", 25);
+    }
+
+
     /**
      * YAML padrão (legado / single-project).
      */

@@ -1,23 +1,21 @@
 package com.rboker.automation.tests.bdd.hooks;
 
 import com.rboker.automation.config.FrameworkConfig;
-import com.rboker.automation.factories.DriverFactory;
 import com.rboker.automation.core.DriverManager;
 import com.rboker.automation.core.ScreenshotUtil;
+import com.rboker.automation.factories.DriverFactory;
+import com.rboker.automation.support.AllureEnvironmentWriter;
 import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
-import org.openqa.selenium.WebDriver;
 import io.qameta.allure.Allure;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
-import com.rboker.automation.support.AllureEnvironmentWriter;
+import org.openqa.selenium.WebDriver;
 
 import java.io.ByteArrayInputStream;
 
-
 public class Hooks {
-
 
     @Before("@ui")
     public void beforeScenario() {
@@ -32,7 +30,6 @@ public class Hooks {
         }
     }
 
-
     @After("@ui")
     public void afterScenario(Scenario scenario) {
         try {
@@ -41,21 +38,31 @@ public class Hooks {
                 // 1) Mantém sua evidência em arquivo (como já está hoje)
                 ScreenshotUtil.capture(scenario.getName());
 
-                // 2) Adiciona evidência no Allure (fica embutido no relatório)
+                // 2) Adiciona evidência no Allure (fica embutido no relatório) - com proteções
                 WebDriver driver = DriverManager.getDriver();
-                if (driver != null) {
-                    byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-                    Allure.addAttachment(
-                            "Screenshot - Falha: " + scenario.getName(),
-                            "image/png",
-                            new ByteArrayInputStream(png),
-                            ".png"
-                    );
+                if (driver != null && driver instanceof TakesScreenshot) {
+                    try {
+                        byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+
+                        // Em alguns cenários o Allure pode reclamar "no test is running".
+                        // Isso não deve quebrar o teardown nem o build.
+                        try {
+                            Allure.addAttachment(
+                                    "Screenshot - Falha: " + scenario.getName(),
+                                    "image/png",
+                                    new ByteArrayInputStream(png),
+                                    ".png"
+                            );
+                        } catch (Exception ignored) {
+                            // best-effort: não deixamos o teardown falhar por conta do Allure
+                        }
+                    } catch (Exception ignored) {
+                        // best-effort: screenshot pode falhar em alguns drivers/ambientes
+                    }
                 }
             }
         } finally {
             DriverManager.quitDriver();
         }
     }
-
 }
