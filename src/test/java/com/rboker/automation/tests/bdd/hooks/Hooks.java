@@ -6,6 +6,7 @@ import com.rboker.automation.core.ScreenshotUtil;
 import com.rboker.automation.factories.DriverFactory;
 import com.rboker.automation.support.AllureEnvironmentWriter;
 import io.cucumber.java.After;
+import io.cucumber.java.AfterStep;
 import io.cucumber.java.Before;
 import io.cucumber.java.Scenario;
 import io.qameta.allure.Allure;
@@ -30,6 +31,38 @@ public class Hooks {
         }
     }
 
+    /**
+     * Captura screenshot após CADA step e anexa no Allure.
+     * Best-effort: não deve quebrar execução se falhar.
+     */
+    @AfterStep("@ui")
+    public void afterEachStep(Scenario scenario) {
+        try {
+            WebDriver driver = DriverManager.getDriver();
+            if (driver == null || !(driver instanceof TakesScreenshot)) {
+                return;
+            }
+
+            byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+
+            // Nome simples e consistente no relatório
+            String stepLabel = (scenario != null ? scenario.getName() : "Scenario");
+
+            try {
+                Allure.addAttachment(
+                        "Step Screenshot - " + stepLabel,
+                        "image/png",
+                        new ByteArrayInputStream(png),
+                        ".png"
+                );
+            } catch (Exception ignored) {
+                // best-effort: Allure pode dizer "no test is running"
+            }
+        } catch (Exception ignored) {
+            // best-effort: screenshot pode falhar em alguns drivers/ambientes
+        }
+    }
+
     @After("@ui")
     public void afterScenario(Scenario scenario) {
         try {
@@ -44,8 +77,6 @@ public class Hooks {
                     try {
                         byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
 
-                        // Em alguns cenários o Allure pode reclamar "no test is running".
-                        // Isso não deve quebrar o teardown nem o build.
                         try {
                             Allure.addAttachment(
                                     "Screenshot - Falha: " + scenario.getName(),

@@ -1,6 +1,6 @@
 package com.rboker.automation.tests.bdd.steps.register;
 
-import com.rboker.automation.ui.pages.RegisterPage;
+import com.rboker.automation.ui.pages.register.RegisterPage;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Então;
 import io.cucumber.java.pt.Quando;
