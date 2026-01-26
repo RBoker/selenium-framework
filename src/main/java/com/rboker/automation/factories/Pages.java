@@ -2,11 +2,12 @@ package com.rboker.automation.factories;
 
 import com.rboker.automation.core.DriverManager;
 import com.rboker.automation.ui.pages.wikipedia.WikipediaPage;
+import com.rboker.automation.ui.pages.blogagi.BlogAgiHomePage;
 
 /**
  * Factory central de Page Objects.
  * Mantém a criação padronizada e centraliza o acesso ao WebDriver.
- *
+ * <p>
  * Padrão:
  * - Pages em src/main
  * - Driver gerenciado via DriverManager
@@ -23,5 +24,10 @@ public final class Pages {
      */
     public static WikipediaPage wikipedia() {
         return new WikipediaPage(DriverManager.getDriver());
+    }
+    /**
+     * Page única da Agi Blog (Home + Artigo/Resultados).
+     */
+    public static BlogAgiHomePage blogAgi() { return new BlogAgiHomePage(DriverManager.getDriver());
     }
 }

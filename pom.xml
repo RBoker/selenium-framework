@@ -9,9 +9,6 @@
     <artifactId>selenium-framework</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
-    <!-- ========================================================= -->
-    <!-- Properties                                                -->
-    <!-- ========================================================= -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -19,42 +16,37 @@
 
         <selenium.version>4.25.0</selenium.version>
 
-        <!-- JUnit -->
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
         <junit.platform.version>1.10.3</junit.platform.version>
 
-        <!-- Test libs -->
         <mockito.version>5.12.0</mockito.version>
         <assertj.version>3.26.3</assertj.version>
 
-        <!-- Cucumber -->
         <cucumber.version>7.18.1</cucumber.version>
 
-        <!-- YAML -->
         <snakeyaml.version>2.2</snakeyaml.version>
 
-        <!-- Logging -->
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.25</logback.version>
 
-        <!-- Allure -->
         <allure.version>2.29.0</allure.version>
         <allure.maven.version>2.12.0</allure.maven.version>
 
-        <!-- Plugins -->
         <compiler.version>3.13.0</compiler.version>
         <surefire.version>3.5.2</surefire.version>
         <failsafe.version>3.5.2</failsafe.version>
         <jacoco.version>0.8.12</jacoco.version>
+        <exec.plugin.version>3.3.0</exec.plugin.version>
 
-        <!-- ✅ Permite continuar o build quando UI falhar (CLI: -Dfailsafe.testFailureIgnore=true) -->
         <failsafe.testFailureIgnore>false</failsafe.testFailureIgnore>
 
+        <!-- Classe real (package correto) -->
+        <yaml.configurator.mainClass>com.rboker.automation.support.ProjectYamlConfigurator</yaml.configurator.mainClass>
+
+        <junit.platform.props.out>${project.build.testOutputDirectory}/junit-platform.properties</junit.platform.props.out>
+        <allure.results.dir>${project.build.directory}/allure-results</allure.results.dir>
     </properties>
 
-    <!-- ========================================================= -->
-    <!-- Dependency Management (Cucumber BOM)                      -->
-    <!-- ========================================================= -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -67,9 +59,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- ========================================================= -->
-    <!-- Dependencies                                              -->
-    <!-- ========================================================= -->
     <dependencies>
 
         <!-- Selenium -->
@@ -85,6 +74,13 @@
             </exclusions>
         </dependency>
 
+        <!-- YAML (COMPILA no main também) -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+        </dependency>
+
         <!-- Cucumber -->
         <dependency>
             <groupId>io.cucumber</groupId>
@@ -92,7 +88,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Cucumber JUnit Platform Engine -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit-platform-engine</artifactId>
@@ -120,13 +115,6 @@
             <artifactId>junit-platform-suite-engine</artifactId>
             <version>${junit.platform.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <!-- YAML -->
-        <dependency>
-            <groupId>org.yaml</groupId>
-            <artifactId>snakeyaml</artifactId>
-            <version>${snakeyaml.version}</version>
         </dependency>
 
         <!-- Mockito -->
@@ -159,7 +147,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Allure: integração com Cucumber 7 -->
+        <!-- Allure -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-cucumber7-jvm</artifactId>
@@ -167,7 +155,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Allure: integração com JUnit Platform -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-junit-platform</artifactId>
@@ -177,9 +164,6 @@
 
     </dependencies>
 
-    <!-- ========================================================= -->
-    <!-- Build                                                     -->
-    <!-- ========================================================= -->
     <build>
         <plugins>
 
@@ -193,13 +177,12 @@
                 </configuration>
             </plugin>
 
-            <!-- JaCoCo (UNIT + suporte a IT via @{argLine}) -->
+            <!-- JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
                 <executions>
-
                     <execution>
                         <id>jacoco-prepare-agent</id>
                         <phase>initialize</phase>
@@ -212,27 +195,10 @@
                             <append>true</append>
                         </configuration>
                     </execution>
-
-                    <execution>
-                        <id>jacoco-report-on-test</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-
-                    <execution>
-                        <id>jacoco-report-on-verify</id>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-
                 </executions>
             </plugin>
 
-            <!-- Surefire (UNIT TESTS) -->
+            <!-- Surefire (UNIT) -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -249,22 +215,56 @@
         </plugins>
     </build>
 
-    <!-- ========================================================= -->
-    <!-- Profiles                                                  -->
-    <!-- ========================================================= -->
     <profiles>
 
-        <!-- ================= UI PROFILE ================= -->
         <profile>
             <id>ui</id>
             <build>
                 <plugins>
 
-                    <!-- Allure Maven Plugin (para allure:report / allure:serve) -->
+                    <!-- 1) Gera junit-platform.properties a partir do YAML -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>generate-junit-platform-properties-from-yaml</id>
+                                <phase>process-test-classes</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>${yaml.configurator.mainClass}</mainClass>
+                                    <classpathScope>test</classpathScope>
+
+                                    <systemProperties>
+                                        <systemProperty>
+                                            <key>allure.results.directory</key>
+                                            <value>${allure.results.dir}</value>
+                                        </systemProperty>
+                                    </systemProperties>
+
+                                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- Allure report no verify -->
                     <plugin>
                         <groupId>io.qameta.allure</groupId>
                         <artifactId>allure-maven</artifactId>
                         <version>${allure.maven.version}</version>
+                        <executions>
+                            <execution>
+                                <id>allure-report-on-verify</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
 
                     <!-- Disable unit tests -->
@@ -277,29 +277,22 @@
                         </configuration>
                     </plugin>
 
-                    <!-- Failsafe (UI + Cucumber) -->
+                    <!-- Failsafe -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <version>${failsafe.version}</version>
                         <configuration>
                             <useModulePath>false</useModulePath>
-
-                            <!-- ✅ Permite ignorar falhas (CLI: -Dfailsafe.testFailureIgnore=true) -->
                             <testFailureIgnore>${failsafe.testFailureIgnore}</testFailureIgnore>
-
                             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
-
                             <systemPropertyVariables>
-                                <allure.results.directory>${project.build.directory}/allure-results</allure.results.directory>
+                                <allure.results.directory>${allure.results.dir}</allure.results.directory>
                             </systemPropertyVariables>
-
                             <includes>
                                 <include>**/RunCucumberTest.java</include>
                             </includes>
-
                         </configuration>
-
                         <executions>
                             <execution>
                                 <goals>

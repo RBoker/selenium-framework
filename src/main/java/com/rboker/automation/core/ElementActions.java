@@ -1,12 +1,10 @@
 package com.rboker.automation.core;
 
 import com.rboker.automation.factories.WaitFactory;
-import org.openqa.selenium.By;
-import org.openqa.selenium.ElementClickInterceptedException;
-import org.openqa.selenium.StaleElementReferenceException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
+import java.util.List;
 
 /**
  * Ações seguras para interação com elementos.
@@ -21,13 +19,36 @@ public final class ElementActions {
     }
 
     /**
+     * Clique via JavaScript.
+     * Útil quando overlays/animações impedem o clique nativo do Selenium.
+     *
+     * @param locator localizador do elemento
+     */
+    public static void jsClick(By locator) {
+        WebElement el = waitVisible(locator);
+        ((JavascriptExecutor) DriverManager.getDriver())
+                .executeScript("arguments[0].click();", el);
+    }
+
+    /**
+     * Clique via JavaScript em um WebElement.
+     * Útil quando overlays/animações impedem o clique nativo do Selenium.
+     *
+     * @param element elemento alvo
+     */
+    public static void jsClick(WebElement element) {
+        ((JavascriptExecutor) DriverManager.getDriver())
+                .executeScript("arguments[0].click();", element);
+    }
+
+    /**
      * Aguarda um elemento ficar visível.
      *
      * @param locator localizador do elemento
      * @return WebElement visível
      */
     public static WebElement waitVisible(By locator) {
-        return WaitFactory.defaultWait()
+        return WaitFactory.uiWait()
                 .until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 
@@ -38,8 +59,64 @@ public final class ElementActions {
      * @return WebElement clicável
      */
     public static WebElement waitClickable(By locator) {
-        return WaitFactory.defaultWait()
+        return WaitFactory.uiWait()
                 .until(ExpectedConditions.elementToBeClickable(locator));
+    }
+
+    /**
+     * Retorna o primeiro elemento visível (isDisplayed) encontrado por um locator.
+     *
+     * <p>Esse método é essencial para páginas que duplicam componentes no DOM (ex.: temas WordPress como Astra),
+     * onde o mesmo locator pode retornar múltiplos elementos e apenas um está visível/interagível.</p>
+     *
+     * @param locator localizador que pode retornar múltiplos matches
+     * @return primeiro WebElement visível
+     * @throws NoSuchElementException caso nenhum match esteja visível
+     */
+    public static WebElement firstDisplayed(By locator) {
+        WaitFactory.uiWait().until(ExpectedConditions.presenceOfAllElementsLocatedBy(locator));
+
+        List<WebElement> all = DriverManager.getDriver().findElements(locator);
+
+        return all.stream()
+                .filter(WebElement::isDisplayed)
+                .findFirst()
+                .orElseThrow(() -> new NoSuchElementException("Nenhum elemento visível para: " + locator));
+    }
+
+    /**
+     * Clica no primeiro elemento visível encontrado por um locator.
+     *
+     * <p>Implementa retry para cenários de DOM dinâmico (StaleElementReference) e overlays (click interceptado),
+     * com fallback para clique via JavaScript.</p>
+     *
+     * @param locator localizador que pode retornar múltiplos matches
+     */
+    public static void clickFirstDisplayed(By locator) {
+        int attempts = 0;
+
+        while (true) {
+            try {
+                WebElement el = firstDisplayed(locator);
+
+                // Aguarda clicabilidade no WebElement (não no By), porque o By pode apontar para elemento invisível
+                WaitFactory.uiWait().until(ExpectedConditions.elementToBeClickable(el)).click();
+                return;
+
+            } catch (StaleElementReferenceException e) {
+                attempts++;
+                if (attempts >= DEFAULT_RETRY_ATTEMPTS) throw e;
+
+            } catch (ElementClickInterceptedException | TimeoutException e) {
+                attempts++;
+                if (attempts >= DEFAULT_RETRY_ATTEMPTS) {
+                    // fallback definitivo
+                    WebElement el = firstDisplayed(locator);
+                    jsClick(el);
+                    return;
+                }
+            }
+        }
     }
 
     /**
@@ -55,12 +132,16 @@ public final class ElementActions {
             try {
                 waitClickable(locator).click();
                 return;
-            } catch (StaleElementReferenceException | ElementClickInterceptedException e) {
+            } catch (StaleElementReferenceException e) {
+                attempts++;
+                if (attempts >= DEFAULT_RETRY_ATTEMPTS) throw e;
+            } catch (ElementClickInterceptedException e) {
                 attempts++;
                 if (attempts >= DEFAULT_RETRY_ATTEMPTS) {
-                    throw e;
+                    // fallback definitivo
+                    jsClick(locator);
+                    return;
                 }
-                // Re-tenta: o DOM pode ter sido atualizado (stale) ou um overlay momentâneo interceptou o clique.
             }
         }
     }
@@ -133,5 +214,4 @@ public final class ElementActions {
             }
         }
     }
-
 }
