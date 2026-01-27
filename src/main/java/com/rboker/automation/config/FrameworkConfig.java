@@ -58,42 +58,42 @@ public final class FrameworkConfig {
         // Sysprop: baseUrl (legado)
         // YAML: application.baseUrl
         return getString("baseUrl",
-                yamlString("ui", "baseUrl", "https://example.com"));
+                yamlString("application.baseUrl", "https://example.com"));
     }
 
     public static String browser() {
         // Sysprop: browser (legado)
         // YAML: execution.browser
         return getString("browser",
-                yamlString("ui", "browser", "chrome"));
+                yamlString("execution.browser", "chrome"));
     }
 
     public static boolean headless() {
         // Sysprop: headless (legado)
         // YAML: execution.headless
         return getBoolean("headless",
-                yamlBoolean("ui", "headless", false));
+                yamlBoolean("execution.headless", false));
     }
 
     public static boolean remote() {
         // Sysprop: remote (legado)
-        // YAML: execution.remote
+        // YAML: execution.remote.enabled
         return getBoolean("remote",
-                yamlBoolean("execution", "remote", false));
+                yamlBoolean("execution.remote.enabled", false));
     }
 
     public static String remoteUrl() {
         // Sysprop: remoteUrl (legado)
-        // YAML: execution.remoteUrl
+        // YAML: execution.remote.url
         return getString("remoteUrl",
-                yamlString("execution", "remoteUrl", "http://localhost:4444/wd/hub"));
+                yamlString("execution.remote.url", "http://localhost:4444/wd/hub"));
     }
 
     public static int timeoutSeconds() {
         // Sysprop: timeout (legado)
-        // YAML: timeouts.seconds
+        // YAML: timeouts.defaultSeconds
         return getInt("timeout",
-                yamlInt("ui", "timeoutSeconds", 10), 10);
+                yamlInt("timeouts.defaultSeconds", 10), 10);
     }
 
     public static int uiTimeoutSeconds() {
@@ -110,7 +110,42 @@ public final class FrameworkConfig {
                 return 25;
             }
         }
-        return yamlInt("ui", "uiTimeoutSeconds", 25);
+        return yamlInt("timeouts.uiSeconds", 25);
+    }
+
+    public static int pageLoadSeconds() {
+        // Sysprop: pageLoadSeconds (se quiser)
+        // YAML: timeouts.pageLoadSeconds
+        return getInt("pageLoadSeconds",
+                yamlInt("timeouts.pageLoadSeconds", 30), 30);
+    }
+
+    public static int implicitWaitSeconds() {
+        // Sysprop: implicitWaitSeconds (se quiser)
+        // YAML: timeouts.implicitWaitSeconds
+        return getInt("implicitWaitSeconds",
+                yamlInt("timeouts.implicitWaitSeconds", 0), 0);
+    }
+
+    public static int explicitWaitSeconds() {
+        // Sysprop: explicitWaitSeconds (se quiser)
+        // YAML: timeouts.explicitWaitSeconds
+        return getInt("explicitWaitSeconds",
+                yamlInt("timeouts.explicitWaitSeconds", 10), 10);
+    }
+
+    public static boolean maximizeWindow() {
+        // Sysprop: windowMaximize (se quiser)
+        // YAML: execution.window.maximize
+        return getBoolean("windowMaximize",
+                yamlBoolean("execution.window.maximize", true));
+    }
+
+    public static String loggingLevel() {
+        // Sysprop: logLevel (se quiser)
+        // YAML: logging.level
+        return getString("logLevel",
+                yamlString("logging.level", "INFO"));
     }
 
     /* ==========================================================
@@ -121,25 +156,25 @@ public final class FrameworkConfig {
      * YAML (recomendado):
      * cucumber:
      *   features:
-     *     - classpath:features/register
+     *     - "classpath:features/register"
      */
     public static List<String> cucumberFeatures() {
         String sys = System.getProperty("cucumber.features");
         if (sys != null && !sys.isBlank()) return splitCsvOrSemicolon(sys);
-        return yamlStringList("cucumber", "features");
+        return yamlStringList("cucumber.features");
     }
 
     /**
      * YAML (recomendado):
      * cucumber:
      *   glue:
-     *     - com.rboker.automation.tests.bdd.steps
-     *     - com.rboker.automation.tests.bdd.hooks
+     *     - "com.rboker.automation.tests.bdd.steps"
+     *     - "com.rboker.automation.tests.bdd.hooks"
      */
     public static List<String> cucumberGlue() {
         String sys = System.getProperty("cucumber.glue");
         if (sys != null && !sys.isBlank()) return splitCsvOrSemicolon(sys);
-        return yamlStringList("cucumber", "glue");
+        return yamlStringList("cucumber.glue");
     }
 
     /**
@@ -151,21 +186,21 @@ public final class FrameworkConfig {
         String sys = System.getProperty("cucumber.filter.tags");
         if (sys == null || sys.isBlank()) sys = System.getProperty("cucumber.tags");
         if (sys != null && !sys.isBlank()) return sys.trim();
-        return yamlString("cucumber", "tags", "");
+        return yamlString("cucumber.tags", "");
     }
 
     /**
      * YAML:
      * cucumber:
      *   plugins:
-     *     - pretty
-     *     - io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm
+     *     - "pretty"
+     *     - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
      */
     public static List<String> cucumberPlugins() {
         String sys = System.getProperty("cucumber.plugin");
         if (sys == null || sys.isBlank()) sys = System.getProperty("cucumber.plugins");
         if (sys != null && !sys.isBlank()) return splitCsvOrSemicolon(sys);
-        return yamlStringList("cucumber", "plugins");
+        return yamlStringList("cucumber.plugins");
     }
 
     /* ==========================================================
@@ -190,21 +225,20 @@ public final class FrameworkConfig {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static String yamlString(String section, String key, String fallback) {
-        Object v = yamlValue(section, key);
+    private static String yamlString(String path, String fallback) {
+        Object v = yamlValue(path);
         return v == null ? fallback : v.toString();
     }
 
-    private static boolean yamlBoolean(String section, String key, boolean fallback) {
-        Object v = yamlValue(section, key);
+    private static boolean yamlBoolean(String path, boolean fallback) {
+        Object v = yamlValue(path);
         if (v == null) return fallback;
         if (v instanceof Boolean b) return b;
         return Boolean.parseBoolean(v.toString());
     }
 
-    private static int yamlInt(String section, String key, int fallback) {
-        Object v = yamlValue(section, key);
+    private static int yamlInt(String path, int fallback) {
+        Object v = yamlValue(path);
         if (v == null) return fallback;
         if (v instanceof Number n) return n.intValue();
         try {
@@ -219,8 +253,8 @@ public final class FrameworkConfig {
      * - lista YAML
      * - string única
      */
-    private static List<String> yamlStringList(String section, String key) {
-        Object v = yamlValue(section, key);
+    private static List<String> yamlStringList(String path) {
+        Object v = yamlValue(path);
         if (v == null) return Collections.emptyList();
 
         if (v instanceof List<?> list) {
@@ -239,11 +273,25 @@ public final class FrameworkConfig {
         return Collections.unmodifiableList(List.of(s));
     }
 
+    /**
+     * Resolve um caminho com dot-notation, por exemplo:
+     * "execution.remote.enabled"
+     */
     @SuppressWarnings("unchecked")
-    private static Object yamlValue(String section, String key) {
-        Object sec = YAML_CONFIG.get(section);
-        if (!(sec instanceof Map<?, ?> map)) return null;
-        return ((Map<String, Object>) map).get(key);
+    private static Object yamlValue(String path) {
+        if (path == null || path.isBlank()) return null;
+
+        String[] parts = path.split("\\.");
+        Object current = YAML_CONFIG;
+
+        for (String part : parts) {
+            if (!(current instanceof Map<?, ?> map)) return null;
+            Object next = ((Map<String, Object>) map).get(part);
+            if (next == null) return null;
+            current = next;
+        }
+
+        return current;
     }
 
     /* ==========================================================
@@ -279,7 +327,7 @@ public final class FrameworkConfig {
             Object loaded = new Yaml().load(is);
             if (!(loaded instanceof Map<?, ?> raw)) return Collections.emptyMap();
 
-            return normalizeMap(raw);
+            return normalizeMapDeep(raw);
         } catch (Exception e) {
             return Collections.emptyMap();
         }
@@ -302,8 +350,8 @@ public final class FrameworkConfig {
 
             if (baseVal instanceof Map<?, ?> baseMap && overrideVal instanceof Map<?, ?> overrideMap) {
                 Map<String, Object> mergedChild = deepMergeMaps(
-                        normalizeMap(baseMap),
-                        normalizeMap(overrideMap)
+                        normalizeMapDeep(baseMap),
+                        normalizeMapDeep(overrideMap)
                 );
                 result.put(key, mergedChild);
             } else {
@@ -315,11 +363,39 @@ public final class FrameworkConfig {
         return result;
     }
 
-    private static Map<String, Object> normalizeMap(Map<?, ?> raw) {
+    /**
+     * Normaliza Map recursivamente, garantindo chaves String e preservando estrutura.
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> normalizeMapDeep(Map<?, ?> raw) {
         Map<String, Object> out = new LinkedHashMap<>();
         for (Map.Entry<?, ?> e : raw.entrySet()) {
-            if (e.getKey() != null) {
-                out.put(e.getKey().toString(), e.getValue());
+            if (e.getKey() == null) continue;
+
+            String key = e.getKey().toString();
+            Object val = e.getValue();
+
+            if (val instanceof Map<?, ?> childMap) {
+                out.put(key, normalizeMapDeep(childMap));
+            } else if (val instanceof List<?> list) {
+                out.put(key, normalizeListDeep(list));
+            } else {
+                out.put(key, val);
+            }
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> normalizeListDeep(List<?> raw) {
+        List<Object> out = new ArrayList<>();
+        for (Object item : raw) {
+            if (item instanceof Map<?, ?> mapItem) {
+                out.add(normalizeMapDeep(mapItem));
+            } else if (item instanceof List<?> listItem) {
+                out.add(normalizeListDeep(listItem));
+            } else {
+                out.add(item);
             }
         }
         return out;
@@ -340,4 +416,35 @@ public final class FrameworkConfig {
         }
         return Collections.unmodifiableList(out);
     }
+
+        /* ==========================================================
+       Projeto (metadata)
+       ========================================================== */
+
+    /**
+     * Nome "humano" do projeto, vindo do YAML padronizado:
+     *
+     * project:
+     *   name: "Wikipedia"
+     */
+    public static String projectName() {
+        return yamlString("project.name", "");
+    }
+
+    public static String screenshotMode() {
+        // Sysprop opcional: -DscreenshotMode=EACH_STEP
+        return getString("screenshotMode",
+                yamlString("evidence.screenshot.mode", "FAILED_ONLY"));
+    }
+
+    public static boolean screenshotAttachToAllure() {
+        return getBoolean("screenshotAttachToAllure",
+                yamlBoolean("evidence.screenshot.attachToAllure", true));
+    }
+
+    public static boolean screenshotSaveToFile() {
+        return getBoolean("screenshotSaveToFile",
+                yamlBoolean("evidence.screenshot.saveToFile", true));
+    }
+
 }

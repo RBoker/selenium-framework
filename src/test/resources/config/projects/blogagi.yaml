@@ -1,0 +1,24 @@
+project:
+  id: "blogagi"
+  name: "Blog do Agi"
+
+application:
+  baseUrl: "https://blogdoagi.com.br/"
+
+execution:
+  browser: "chrome"
+  headless: false
+
+timeouts:
+  defaultSeconds: 10
+
+cucumber:
+  features:
+    - "classpath:features/blogagi"
+  glue:
+    - "com.rboker.automation.tests.bdd.steps.blogagi"
+    - "com.rboker.automation.tests.bdd.hooks"
+  tags: "@ui and @blogagi"
+  plugins:
+    - "pretty"
+    - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"

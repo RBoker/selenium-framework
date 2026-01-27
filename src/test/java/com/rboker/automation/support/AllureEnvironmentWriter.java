@@ -39,12 +39,29 @@ public final class AllureEnvironmentWriter {
                 Files.createDirectories(dir);
 
                 Properties p = new Properties();
-                p.setProperty("project", System.getProperty("project", "default"));
+
+                // Projeto selecionado via -Dproject=<id>
+                String projectId = System.getProperty("project", "default").trim();
+                p.setProperty("project", projectId);
+
+                // Nome "humano" do projeto vindo do YAML (project.name).
+                // Fallback: usa o próprio id.
+                String projectName = FrameworkConfig.projectName();
+                if (projectName == null || projectName.isBlank()) {
+                    projectName = projectId;
+                }
+                p.setProperty("projectName", projectName);
+
+                // Execução (YAML merge + sysprops)
                 p.setProperty("baseUrl", FrameworkConfig.baseUrl());
                 p.setProperty("browser", FrameworkConfig.browser());
                 p.setProperty("headless", Boolean.toString(FrameworkConfig.headless()));
                 p.setProperty("remote", Boolean.toString(FrameworkConfig.remote()));
                 p.setProperty("remoteUrl", FrameworkConfig.remoteUrl());
+
+                // Timeouts (útil para diagnóstico e reprodutibilidade)
+                p.setProperty("timeoutSeconds", Integer.toString(FrameworkConfig.timeoutSeconds()));
+                p.setProperty("uiTimeoutSeconds", Integer.toString(FrameworkConfig.uiTimeoutSeconds()));
 
                 try (OutputStream os = Files.newOutputStream(file)) {
                     p.store(os, "Allure environment");

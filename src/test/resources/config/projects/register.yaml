@@ -1,7 +1,21 @@
-project: register
+project:
+  id: "register"
+  name: "Register"
+
+application:
+  baseUrl: "https://demo.automationtesting.in/Register.html"
+
+execution:
+  browser: "chrome"
+  headless: false
+
+timeouts:
+  defaultSeconds: 10
+  uiSeconds: 25
 
 cucumber:
-  features: "classpath:features/register"
+  features:
+    - "classpath:features/register"
   glue:
     - "com.rboker.automation.tests.bdd.steps.register"
     - "com.rboker.automation.tests.bdd.hooks"
@@ -10,9 +24,8 @@ cucumber:
     - "pretty"
     - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
 
-ui:
-  baseUrl: "https://demo.automationtesting.in/Register.html"
-  browser: "chrome"
-  headless: false
-  timeoutSeconds: 10
-  uiTimeoutSeconds: 25
+evidence:
+  screenshot:
+    mode: EACH_SCENARIO   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    attachToAllure: true
+    saveToFile: true
