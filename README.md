@@ -1,33 +1,34 @@
 # Selenium Framework (Java)
 
-Framework de automação de testes em **Java + Selenium**, projetado para separar com clareza:
+Framework de automação de testes **Java + Selenium**, desenhado para ser **multi‑projeto**, **configurável por YAML**, **observável (logs + evidências)** e **pronto para CI/CD**.
 
-* **Testes unitários do framework**
-* **Testes de UI (end-to-end)**
-
-com **execução isolada**, **controle de logging**, **evidência automática em falha** e **gate de cobertura com JaCoCo**.
-
-> 🎯 Objetivo principal: servir como **base sólida, limpa e evolutiva** para projetos de automação UI em Java, suportando **múltiplos projetos**, **relatórios independentes** e **execução previsível em ambiente local ou CI**.
+O objetivo é servir como **base reutilizável e profissional** para projetos de automação UI, separando claramente **framework** de **testes**, mantendo qualidade de código, estabilidade e evolução contínua.
 
 ---
 
-## 📌 Principais características
+## 🎯 Objetivos do framework
 
-* ✅ Java 17 (LTS)
-* ✅ Selenium 4
-* ✅ Maven (Surefire + Failsafe)
-* ✅ JUnit 5 (testes unitários)
-* ✅ Cucumber 7 + JUnit Platform (testes de UI)
-* ✅ JaCoCo com **gate de cobertura (70%)**
-* ✅ Execução separada por **Maven Profiles**
-* ✅ Evidência automática (screenshot) em falha
-* ✅ Page Objects com `BasePage`
-* ✅ `DriverManager` seguro (sem driver zumbi)
-* ✅ `WaitFactory` centralizado
-* ✅ `ElementActions` para interações resilientes
-* ✅ Logging controlado (Logback + logging.properties)
-* ✅ Logs limpos (sem warnings ruidosos do Selenium)
-* ✅ Integração com **Allure Report** (mesmo com falha de testes)
+* Centralizar boas práticas de automação UI em Java
+* Permitir múltiplos projetos (sites/sistemas) no mesmo repositório
+* Facilitar manutenção com Page Objects e camadas bem definidas
+* Garantir estabilidade com waits e sincronismo consistentes
+* Gerar evidências automáticas (screenshots)
+* Produzir relatórios ricos com Allure
+* Ser simples de rodar localmente e em pipelines CI
+
+---
+
+## 🧰 Stack tecnológica
+
+* **Java:** 17 (LTS)
+* **Selenium:** 4.x
+* **Build:** Maven
+* **Testes unitários:** JUnit 5
+* **Testes de UI:** TestNG + Cucumber
+* **Relatórios:** Allure
+* **Cobertura:** JaCoCo (gate mínimo configurável)
+* **Configuração:** System Properties + YAML por projeto
+* **Logs:** SLF4J + Logback
 
 ---
 
@@ -38,181 +39,488 @@ src
 ├── main
 │   └── java
 │       └── com.rboker.automation
-│           ├── config        # Leitura de System Properties (-D)
-│           └── core          # DriverManager, WaitFactory, ElementActions, ScreenshotUtil
+│           ├── config        # Leitura de configurações (System + YAML)
+│           ├── core          # DriverManager, WebDriver lifecycle
+│           ├── wait          # WaitFactory e sincronismo
+│           ├── utils         # Screenshot, helpers, utilidades
+│           └── base          # BasePage e abstrações
 │
-└── test
-    ├── java
-    │   └── com.rboker.automation.tests
-    │       ├── unit          # Testes unitários do framework (JUnit 5)
-    │       └── bdd           # Steps e runners Cucumber (UI)
-    │
-    └── resources
-        ├── features          # Arquivos .feature (Cucumber)
-        ├── logback-test.xml  # Logging SLF4J / Logback
-        └── logging.properties# Logging JUL (Selenium / WebDriver)
+├── test
+│   ├── java
+│   │   └── com.rboker.automation
+│   │       ├── hooks         # Hooks do Cucumber/TestNG
+│   │       ├── runners       # Runners TestNG
+│   │       ├── steps         # Step Definitions
+│   │       └── tests         # Testes unitários do framework
+│   │
+│   └── resources
+│       ├── features         # Arquivos .feature (Cucumber)
+│       ├── config
+│       │   └── projects     # YAML por projeto
+│       │       ├── wikipedia.yaml
+│       │       └── register.yaml
+│       └── allure           # environment.properties, categories.json
+│
+└── pom.xml
 ```
 
 ---
 
-## ⚙️ Configuração via `-D`
+## 🔀 Conceito de multi‑projeto
 
-O framework é configurado **exclusivamente por System Properties**, permitindo reutilização do mesmo binário para diferentes projetos e ambientes.
+O framework suporta **múltiplos projetos/sistemas** dentro do mesmo repositório.
 
-| Propriedade | Descrição                             | Default                        |
-| ----------- | ------------------------------------- | ------------------------------ |
-| `project`   | Identificador lógico do projeto       | `default`                      |
-| `baseUrl`   | URL base da aplicação                 | `https://example.com`          |
-| `browser`   | Browser (`chrome`, `firefox`, `edge`) | `chrome`                       |
-| `headless`  | Executa em modo headless              | `false`                        |
-| `remote`    | Usa Selenium Grid                     | `false`                        |
-| `remoteUrl` | URL do Grid                           | `http://localhost:4444/wd/hub` |
-| `timeout`   | Timeout padrão (segundos)             | `10`                           |
+Cada projeto possui:
 
-Exemplo:
+* Um arquivo YAML próprio
+* Base URL
+* Regras de evidência (screenshots)
+* Comportamentos específicos
+
+A seleção do projeto é feita via **System Property**:
+
+```bash
+-Dproject=wikipedia
+```
+
+O framework carrega automaticamente:
+
+```
+src/test/resources/config/projects/wikipedia.yaml
+```
+
+---
+
+## ⚙️ Configuração por YAML
+
+Cada projeto possui um YAML dedicado.
+
+### Exemplo: `wikipedia.yaml`
+
+```yaml
+project:
+  name: Wikipedia
+  baseUrl: https://www.wikipedia.org
+
+browser:
+  default: chrome
+  headless: true
+
+execution:
+  timeoutSeconds: 10
+
+screenshots:
+  onStep: false
+  onFailure: true
+```
+
+### Prioridade de configuração
+
+1. System Properties (`-D`)
+2. YAML do projeto
+3. Valores default do framework
+
+---
+
+## 🧠 Leitura de configurações
+
+O framework possui uma classe central de configuração que:
+
+* Lê System Properties
+* Lê o YAML do projeto selecionado
+* Resolve overrides automaticamente
+
+Exemplo de uso interno:
+
+```java
+Config.getBaseUrl();
+Config.isHeadless();
+Config.isScreenshotOnFailure();
+```
+
+---
+
+## 🌐 Execução de testes UI
+
+### Profile Maven
+
+Os testes de UI são executados via profile `ui`.
 
 ```bash
 mvn clean verify -Pui \
   -Dproject=wikipedia \
-  -DbaseUrl=https://www.wikipedia.org \
-  -Dbrowser=chrome
+  -Dbrowser=chrome \
+  -Dheadless=false
 ```
 
----
-
-## 🧪 Tipos de testes
-
-### 🔹 Testes Unitários (framework)
-
-* 📁 Pacote: `com.rboker.automation.tests.unit`
-* 🧪 Framework: **JUnit 5**
-* ▶️ Executados pelo **maven-surefire-plugin**
-* 📊 Cobertos por **JaCoCo**
-* 🚦 Gate de cobertura: **70%**
-
-Execução:
+### Filtros de execução (Cucumber Tags)
 
 ```bash
-mvn clean test
-```
-
-Relatório de cobertura:
-
-```
-target/site/jacoco/index.html
+-Dcucumber.filter.tags="@ui and @smoke"
 ```
 
 ---
 
-### 🔹 Testes de UI (Selenium + Cucumber)
+## 🧪 Testes unitários do framework
 
-* 📁 Pacote: `com.rboker.automation.tests.bdd`
-* 🧪 Frameworks:
+Os testes unitários validam:
 
-  * **Cucumber 7**
-  * **JUnit Platform**
-* ▶️ Executados pelo **maven-failsafe-plugin**
-* 🔒 Totalmente isolados dos testes unitários
-* 🧹 Não afetam métricas de cobertura
+* Configuração
+* WaitFactory
+* ScreenshotUtil
+* Utilitários internos
 
 Execução padrão:
 
 ```bash
-mvn clean verify -Pui \
-  -Dproject=wikipedia \
-  -DbaseUrl=https://www.wikipedia.org
+mvn test
 ```
 
-### ▶️ Executar e abrir relatório Allure (mesmo com falha)
+Esses testes **não** abrem navegador.
+
+---
+
+## 🧭 DriverManager
+
+Responsável por:
+
+* Criar WebDriver
+* Encerrar corretamente a sessão
+* Evitar drivers zumbis
+* Suportar execução paralela (ThreadLocal)
+
+Uso interno:
+
+```java
+WebDriver driver = DriverManager.getDriver();
+```
+
+---
+
+## ⏱️ WaitFactory
+
+Centraliza toda a lógica de espera:
+
+* WebDriverWait
+* FluentWait
+* Tratamento de StaleElementReferenceException
+
+Exemplo:
+
+```java
+WaitFactory.waitForVisible(element);
+```
+
+Evita waits espalhados e inconsistentes no código.
+
+---
+
+## 🧩 Page Objects
+
+O framework segue **Page Object Model** com `BasePage`.
+
+### BasePage
+
+Responsável por:
+
+* Acesso ao driver
+* Métodos utilitários comuns
+* Integração com waits
+
+### Exemplo de Page Object
+
+```java
+public class SearchPage extends BasePage {
+
+    private final By searchInput = By.id("searchInput");
+
+    public void search(String text) {
+        type(searchInput, text);
+        submit(searchInput);
+    }
+}
+```
+
+---
+
+## 📸 Evidências (screenshots)
+
+O framework suporta evidência automática configurável:
+
+* Screenshot a cada passo
+* Screenshot apenas em falha
+
+Configurado no YAML:
+
+```yaml
+screenshots:
+  onStep: false
+  onFailure: true
+```
+
+As imagens são anexadas automaticamente ao Allure.
+
+---
+
+## 🆕 Como criar um novo projeto do zero
+
+Esta seção descreve o **passo a passo completo** para adicionar um novo projeto (site ou sistema) ao framework.
+
+
+### 1) Defina o nome do projeto (chave do YAML)
+
+Escolha um identificador simples, sem espaços e em minúsculo, por exemplo:
+
+- `blogagi`
+- `register`
+- `minhaapp`
+
+Esse valor será usado na execução via:
 
 ```bash
-mvn clean verify -Pui \
-  -Dproject=wikipedia \
-  -Dfailsafe.testFailureIgnore=true
+-Dproject=blogagi
+```
 
+### 1️⃣ Criar o arquivo YAML do projeto
+
+Crie um novo arquivo em:
+
+```
+src/test/resources/config/projects/
+```
+
+Exemplo: `meuprojeto.yaml`
+
+```yaml
+project:
+  name: Meu Projeto
+  baseUrl: https://www.meuprojeto.com
+
+browser:
+  default: chrome
+  headless: true
+
+execution:
+  timeoutSeconds: 10
+
+evidence:
+  screenshot:
+    # NONE = não gera evidência
+    # FAILED_ONLY = gera apenas em falha
+    # EACH_STEP = gera a cada passo (mais pesado)
+    # EACH_SCENARIO = gera ao final de cada cenário
+      mode: FAILED_ONLY
+      attachToAllure: true
+      saveToFile: true
+```
+
+> 🔎 O nome do arquivo **define o identificador do projeto** usado na execução (`-Dproject=meuprojeto`).
+
+---
+
+### 2️⃣ Criar as Features do projeto
+
+Adicione as features em:
+
+```
+src/test/resources/features/meuprojeto/
+```
+
+Exemplo: `busca.feature`
+
+```gherkin
+@ui @meuprojeto
+Feature: Busca no Meu Projeto
+  @ui @meuprojeto @smoke
+  Scenario: Realizar uma busca simples
+    Given que acesso a página inicial
+    When realizo uma busca por "exemplo"
+    Then devo ver resultados relacionados
+```
+
+---
+
+### 3️⃣ Criar Page Objects
+
+Crie os Page Objects em:
+
+```
+src/test/java/com/rboker/automation/pages/meuprojeto/
+```
+
+Exemplo:
+
+```java
+public class HomePage extends BasePage {
+
+    private final By searchInput = By.id("search");
+
+    public void search(String text) {
+        type(searchInput, text);
+        submit(searchInput);
+    }
+}
+```
+
+---
+
+### 4️⃣ Criar Step Definitions
+
+Crie os steps em:
+
+```
+src/test/java/com/rboker/automation/steps/meuprojeto/
+```
+
+Exemplo:
+
+```java
+public class SearchSteps {
+
+    private final HomePage homePage = new HomePage();
+
+    @Given("que acesso a página inicial")
+    public void acessarPaginaInicial() {
+        homePage.open();
+    }
+
+    @When("realizo uma busca por {string}")
+    public void realizarBusca(String texto) {
+        homePage.search(texto);
+    }
+}
+```
+
+---
+
+### 5️⃣ Executar o novo projeto
+
+Execute informando o projeto criado:
+
+```bash
+mvn clean verify -Pui -Dproject=meuprojeto -Dcucumber.filter.tags="@meuprojeto"
+```
+
+### 6️⃣ Validar o relatório
+
+Após a execução:
+
+```bash
 mvn allure:serve
 ```
 
-> ⚠️ Importante: a flag `-Dmaven.test.failure.ignore=true` **não se aplica ao Failsafe**. Para testes de UI, use sempre `failsafe.testFailureIgnore`.
+Verifique:
+
+* Projeto correto no `environment.properties`
+* Evidências conforme configuração do YAML
+* Steps e cenários executados corretamente
 
 ---
 
-## 📋 Logging
+### ✅ Checklist rápido
 
-O framework adota **separação explícita de responsabilidades de logging**.
+* [ ] YAML criado em `config/projects`
+* [ ] Features organizadas por projeto
+* [ ] Page Objects isolados
+* [ ] Steps específicos do projeto
+* [ ] Tags configuradas
+* [ ] Execução validada
 
-### 🔹 Logback (SLF4J)
-
-Arquivo:
-
-```
-src/test/resources/logback-test.xml
-```
-
-Responsável por:
-
-* Logs do framework
-* Logs de testes
-* Logs de negócio
-
-### 🔹 logging.properties (JUL)
-
-Arquivo:
-
-```
-src/test/resources/logging.properties
-```
-
-Responsável por:
-
-* Selenium
-* WebDriver
-* ChromeDriver / GeckoDriver
-
-➡️ Benefício direto: eliminação de warnings ruidosos como `Unable to find CDP implementation`.
+Seguindo esses passos, o novo projeto já nasce **padronizado, isolado e pronto para CI** 🚀
 
 ---
 
-## 📸 Evidências em falha (UI)
+## 📊 Relatórios com Allure
 
-Em qualquer falha de teste UI:
+### Execução
 
-* 📷 Screenshot automático
-* 📁 Diretório:
-
-```
-target/screenshots
+```bash
+mvn clean verify -Pui -Dproject=wikipedia allure:serve
 ```
 
-* 🧾 Nome do arquivo contém nome do cenário + timestamp
+Ou geração estática:
+
+```bash
+mvn allure:report
+```
+
+### Arquivos suportados
+
+* `environment.properties`
+* `categories.json`
+
+Esses arquivos ficam em:
+
+```
+src/test/resources/allure
+```
+
+O relatório é **independente por execução**.
 
 ---
 
-## 🚦 Cobertura de código (JaCoCo)
+## 🧪 JaCoCo – Gate de cobertura
 
-* Aplicada **somente aos testes unitários**
-* Classes acopladas ao Selenium são excluídas
-* Build falha automaticamente se cobertura < **70%**
+O framework aplica **gate mínimo de cobertura** para código do framework.
 
----
+* Executado automaticamente no `verify`
+* Falha o build se não atingir o percentual configurado
 
-## 🚀 Estado do projeto
-
-✅ **Fase de suporte a múltiplos projetos e relatórios: CONCLUÍDA**
-
-O framework está pronto para:
-
-* Reutilização entre projetos
-* Execução local e em CI
-* Evolução incremental sem refatorações estruturais
+Isso garante qualidade contínua.
 
 ---
 
-## 🤝 Contribuição
+## 🧵 Execução paralela
 
-Sugestões, issues e PRs são bem-vindos.
+* TestNG permite paralelismo
+* Driver isolado por thread
+* Seguro para CI
 
-> Mantenha o padrão de separação entre **framework**, **testes unitários** e **testes de UI**.
+Configuração via TestNG XML (quando necessário).
+
+---
+
+## 🤖 Integração com CI/CD
+
+O framework é compatível com:
+
+* GitHub Actions
+* GitLab CI
+* Jenkins
+
+Basta garantir:
+
+* Java 17
+* Maven
+* Navegador (ou grid remoto futuramente)
+
+---
+
+## 🛡️ Boas práticas adotadas
+
+* Separação total entre framework e testes
+* Nenhum `Thread.sleep`
+* Waits centralizados
+* Configuração externa
+* Código documentado
+* Estrutura limpa
+
+---
+
+## 🚀 Próximos passos (roadmap)
+
+* Selenium Grid
+* Execução cross‑browser
+* Execução em containers
+* Vídeos de execução
+* Integração com gerenciadores de teste (ex.: Qase)
+
+---
+
+## 👤 Autor
+
+**Roberto Boker**
+QA / Test Automation Engineer
 
 ---
 

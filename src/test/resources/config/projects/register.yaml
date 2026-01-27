@@ -26,6 +26,10 @@ cucumber:
 
 evidence:
   screenshot:
-    mode: EACH_SCENARIO   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    # NONE = não gera evidência
+    # FAILED_ONLY = gera apenas em falha
+    # EACH_STEP = gera a cada passo (mais pesado)
+    # EACH_SCENARIO = gera ao final de cada cenário
+    mode: EACH_SCENARIO
     attachToAllure: true
     saveToFile: true
