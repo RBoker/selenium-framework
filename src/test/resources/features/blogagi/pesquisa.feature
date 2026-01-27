@@ -1,6 +1,6 @@
 # language: pt
 
-@ui @agi
+@ui @blogagi
 Funcionalidade: Pesquisa no Blog do Agi
   Como usuário do Blog do Agi
   Quero pesquisar por conteúdos

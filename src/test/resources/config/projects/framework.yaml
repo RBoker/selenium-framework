@@ -1,0 +1,61 @@
+framework:
+  name: "selenium-framework"
+  version: "1.0.0"
+  owner: "rboker"
+
+project:
+  # Se você quiser, o YAML do projeto sobrescreve isso:
+  id: "default"
+  name: "Default Project"
+
+application:
+  baseUrl: "https://example.com"
+
+execution:
+  browser: "chrome"
+  headless: false
+
+  remote:
+    enabled: false
+    url: "http://localhost:4444/wd/hub"
+
+  window:
+    maximize: true
+    width: 1366
+    height: 768
+
+timeouts:
+  # Timeout “geral” (ex.: waits padrão, wrappers, etc.)
+  defaultSeconds: 10
+
+  # Timeout específico de UI (ex.: páginas pesadas / fluxos mais lentos)
+  uiSeconds: 25
+
+  # Timeout de carregamento de página do driver
+  pageLoadSeconds: 30
+
+  # Esperas do Selenium
+  implicitWaitSeconds: 0
+  explicitWaitSeconds: 10
+
+selenium:
+  # Deixe false se você não quer “telemetria” extra do Selenium Manager/logs
+  # (opcional, só um espaço pra futuras configs)
+  strictMode: false
+
+logging:
+  level: "INFO"
+
+cucumber:
+  # Por padrão vazio; cada projeto define o que precisa.
+  features: []
+  glue: []
+  tags: ""
+  plugins:
+    - "pretty"
+    - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
+evidence:
+  screenshot:
+    mode: FAILED_ONLY   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    attachToAllure: true
+    saveToFile: true

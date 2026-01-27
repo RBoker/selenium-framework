@@ -18,6 +18,22 @@ import java.io.ByteArrayInputStream;
 
 public class Hooks {
 
+    private enum ScreenshotMode {
+        NONE,
+        FAILED_ONLY,
+        EACH_STEP,
+        EACH_SCENARIO;
+
+        static ScreenshotMode from(String raw) {
+            if (raw == null) return FAILED_ONLY;
+            try {
+                return ScreenshotMode.valueOf(raw.trim().toUpperCase());
+            } catch (Exception ignored) {
+                return FAILED_ONLY;
+            }
+        }
+    }
+
     @Before("@ui")
     public void beforeScenario() {
         AllureEnvironmentWriter.writeOnce();
@@ -32,68 +48,60 @@ public class Hooks {
     }
 
     /**
-     * Captura screenshot após CADA step e anexa no Allure.
-     * Best-effort: não deve quebrar execução se falhar.
+     * Screenshot após CADA step (se configurado).
      */
     @AfterStep("@ui")
     public void afterEachStep(Scenario scenario) {
-        try {
-            WebDriver driver = DriverManager.getDriver();
-            if (driver == null || !(driver instanceof TakesScreenshot)) {
-                return;
-            }
+        ScreenshotMode mode = ScreenshotMode.from(FrameworkConfig.screenshotMode());
+        if (mode != ScreenshotMode.EACH_STEP) return;
 
-            byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-
-            // Nome simples e consistente no relatório
-            String stepLabel = (scenario != null ? scenario.getName() : "Scenario");
-
-            try {
-                Allure.addAttachment(
-                        "Step Screenshot - " + stepLabel,
-                        "image/png",
-                        new ByteArrayInputStream(png),
-                        ".png"
-                );
-            } catch (Exception ignored) {
-                // best-effort: Allure pode dizer "no test is running"
-            }
-        } catch (Exception ignored) {
-            // best-effort: screenshot pode falhar em alguns drivers/ambientes
-        }
+        captureAndAttach("Step Screenshot", scenario);
     }
 
+    /**
+     * Screenshot no fim do cenário (se configurado) e/ou em falha (se configurado).
+     */
     @After("@ui")
     public void afterScenario(Scenario scenario) {
         try {
-            if (scenario != null && scenario.isFailed()) {
+            ScreenshotMode mode = ScreenshotMode.from(FrameworkConfig.screenshotMode());
 
-                // 1) Mantém sua evidência em arquivo (como já está hoje)
+            boolean failed = scenario != null && scenario.isFailed();
+
+            boolean shouldCapture =
+                    (mode == ScreenshotMode.EACH_SCENARIO) ||
+                            (mode == ScreenshotMode.FAILED_ONLY && failed);
+
+            if (shouldCapture) {
+                captureAndAttach(failed ? "Screenshot - Falha" : "Screenshot - Cenário", scenario);
+            }
+
+            // Mantém evidência em arquivo APENAS se configurado e em falha (boa prática)
+            if (failed && FrameworkConfig.screenshotSaveToFile()) {
                 ScreenshotUtil.capture(scenario.getName());
-
-                // 2) Adiciona evidência no Allure (fica embutido no relatório) - com proteções
-                WebDriver driver = DriverManager.getDriver();
-                if (driver != null && driver instanceof TakesScreenshot) {
-                    try {
-                        byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-
-                        try {
-                            Allure.addAttachment(
-                                    "Screenshot - Falha: " + scenario.getName(),
-                                    "image/png",
-                                    new ByteArrayInputStream(png),
-                                    ".png"
-                            );
-                        } catch (Exception ignored) {
-                            // best-effort: não deixamos o teardown falhar por conta do Allure
-                        }
-                    } catch (Exception ignored) {
-                        // best-effort: screenshot pode falhar em alguns drivers/ambientes
-                    }
-                }
             }
         } finally {
             DriverManager.quitDriver();
+        }
+    }
+
+    private void captureAndAttach(String label, Scenario scenario) {
+        try {
+            WebDriver driver = DriverManager.getDriver();
+            if (driver == null || !(driver instanceof TakesScreenshot)) return;
+
+            byte[] png = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+
+            if (FrameworkConfig.screenshotAttachToAllure()) {
+                try {
+                    String name = (scenario != null ? scenario.getName() : "Scenario");
+                    Allure.addAttachment(label + " - " + name, "image/png", new ByteArrayInputStream(png), ".png");
+                } catch (Exception ignored) {
+                    // best-effort: Allure pode dizer "no test is running"
+                }
+            }
+        } catch (Exception ignored) {
+            // best-effort
         }
     }
 }

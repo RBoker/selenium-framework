@@ -1,21 +1,38 @@
-framework:
-  name: selenium-framework
-  timeout:
-    defaultSeconds: 15
-    pageLoadSeconds: 30
+project:
+  id: "wikipedia"
+  name: "Wikipedia"
+
+application:
+  baseUrl: "https://www.wikipedia.org"
 
 execution:
-  browser: chrome
+  browser: "chrome"
   headless: false
   window:
     maximize: true
 
-application:
-  baseUrl: https://www.wikipedia.org
-
-logging:
-  level: INFO
-
-selenium:
+timeouts:
+  defaultSeconds: 15
+  pageLoadSeconds: 30
   implicitWaitSeconds: 0
   explicitWaitSeconds: 10
+
+logging:
+  level: "INFO"
+
+cucumber:
+  features:
+    - "classpath:features/wikipedia"
+  glue:
+    - "com.rboker.automation.tests.bdd.steps.wikipedia"
+    - "com.rboker.automation.tests.bdd.hooks"
+  tags: "@ui and @wikipedia"
+  plugins:
+    - "pretty"
+    - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
+
+evidence:
+  screenshot:
+    mode: FAILED_ONLY   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    attachToAllure: true
+    saveToFile: true

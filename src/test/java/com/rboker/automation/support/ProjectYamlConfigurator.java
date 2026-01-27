@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Lê o YAML do projeto (src/test/resources/projects/{project}.yaml) e
+ * Lê o YAML do projeto (src/test/resources/config/projects/{project}.yaml) e
  * gera o arquivo junit-platform.properties dentro de target/test-classes,
  * antes do JUnit/Cucumber fazer discovery.
  *
@@ -40,14 +40,21 @@ public final class ProjectYamlConfigurator {
             root = loadYamlFromTestResources(yamlPath + ".yml");
         }
 
-
         Map<String, Object> cucumber = asMap(root.get("cucumber"), "cucumber");
-        String features = asString(cucumber.get("features"), "cucumber.features");
+
+        // features agora pode ser lista (recomendado) ou string (compat)
+        List<String> features = asStringList(cucumber.get("features"), "cucumber.features");
         List<String> glue = asStringList(cucumber.get("glue"), "cucumber.glue");
         String tags = asNullableString(cucumber.get("tags"));
         List<String> plugins = asStringList(cucumber.get("plugins"), "cucumber.plugins");
 
-        if (isBlank(features)) {
+        // Normalização básica (evita espaços e itens vazios)
+        features = normalizeStringList(features);
+        glue = normalizeStringList(glue);
+        plugins = normalizeStringList(plugins);
+        tags = (tags == null) ? null : tags.trim();
+
+        if (features.isEmpty()) {
             throw new IllegalStateException("YAML inválido: cucumber.features está vazio em " + yamlPath);
         }
         if (glue.isEmpty()) {
@@ -57,7 +64,9 @@ public final class ProjectYamlConfigurator {
         Properties props = new Properties();
 
         // Cucumber JUnit Platform Engine properties
-        props.setProperty("cucumber.features", features);
+        // IMPORTANTE: cucumber.features não aceita a string "[...]" (lista toString).
+        // Precisa ser CSV: "classpath:features/a,classpath:features/b"
+        props.setProperty("cucumber.features", String.join(",", features));
         props.setProperty("cucumber.glue", String.join(",", glue));
 
         if (!isBlank(tags)) {
@@ -84,7 +93,6 @@ public final class ProjectYamlConfigurator {
             LoaderOptions options = new LoaderOptions();
             Yaml yaml = new Yaml(new SafeConstructor(options));
             Object obj = yaml.load(in);
-
 
             if (obj == null) {
                 throw new IllegalStateException("YAML inválido: arquivo vazio em " + resourcePath);
@@ -136,13 +144,6 @@ public final class ProjectYamlConfigurator {
         return toStringObjectMap(map, path);
     }
 
-    private static String asString(Object v, String path) {
-        if (v == null) {
-            throw new IllegalStateException("YAML inválido: '" + path + "' é obrigatório.");
-        }
-        return String.valueOf(v);
-    }
-
     private static String asNullableString(Object v) {
         return v == null ? null : String.valueOf(v);
     }
@@ -164,6 +165,23 @@ public final class ProjectYamlConfigurator {
 
         // Permite também string única no YAML (atalho)
         return List.of(String.valueOf(v));
+    }
+
+    /**
+     * Normaliza lista de strings:
+     * - trim
+     * - remove vazios
+     */
+    private static List<String> normalizeStringList(List<String> raw) {
+        if (raw == null || raw.isEmpty()) return Collections.emptyList();
+
+        List<String> out = new ArrayList<>();
+        for (String s : raw) {
+            if (s == null) continue;
+            String v = s.trim();
+            if (!v.isBlank()) out.add(v);
+        }
+        return out;
     }
 
     private static boolean isBlank(String s) {
