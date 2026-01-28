@@ -17,8 +17,8 @@ cucumber:
   features:
     - "classpath:features/register"
   glue:
-    - "com.rboker.automation.tests.bdd.steps.register"
-    - "com.rboker.automation.tests.bdd.hooks"
+    - "com.rboker.automation.projects.register.ui.steps"
+    - "com.rboker.automation.hooks"
   tags: "@ui and @register"
   plugins:
     - "pretty"

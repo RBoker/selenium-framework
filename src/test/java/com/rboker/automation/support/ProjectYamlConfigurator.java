@@ -18,8 +18,16 @@ import java.util.stream.Collectors;
  * antes do JUnit/Cucumber fazer discovery.
  *
  * Assim, features/glue/tags/plugins ficam 100% no YAML.
+ *
+ * IMPORTANTE (modo Suite Engine / Runner):
+ * - Por padrão NÃO geramos 'cucumber.features' para não forçar discovery via property
+ *   (isso gera warning e ignora outros discovery selectors do JUnit Platform).
+ * - Caso você precise do comportamento legado, habilite no YAML:
+ *   cucumber.useFeaturesProperty: true
  */
 public final class ProjectYamlConfigurator {
+
+    private static final String DEFAULT_PROJECT = "register"; // default seguro (ou ajuste para "default")
 
     private ProjectYamlConfigurator() {
         // utilitário
@@ -28,7 +36,7 @@ public final class ProjectYamlConfigurator {
     public static void main(String[] args) throws IOException {
         String project = System.getProperty("project");
         if (isBlank(project)) {
-            project = "register"; // default seguro (ou ajuste para "default")
+            project = DEFAULT_PROJECT;
         }
 
         String yamlPath = "config/projects/" + project;
@@ -42,6 +50,14 @@ public final class ProjectYamlConfigurator {
 
         Map<String, Object> cucumber = asMap(root.get("cucumber"), "cucumber");
 
+        // Toggle (modo legacy): só gera cucumber.features se YAML pedir explicitamente.
+        boolean useFeaturesProperty = readBoolean(
+                cucumber,
+                "useFeaturesProperty",
+                "featuresProperty",     // alias compatível
+                false                   // default: NÃO gerar
+        );
+
         // features agora pode ser lista (recomendado) ou string (compat)
         List<String> features = asStringList(cucumber.get("features"), "cucumber.features");
         List<String> glue = asStringList(cucumber.get("glue"), "cucumber.glue");
@@ -54,19 +70,20 @@ public final class ProjectYamlConfigurator {
         plugins = normalizeStringList(plugins);
         tags = (tags == null) ? null : tags.trim();
 
-        if (features.isEmpty()) {
-            throw new IllegalStateException("YAML inválido: cucumber.features está vazio em " + yamlPath);
-        }
+        // Validação: glue é obrigatório (sem glue, nada roda).
         if (glue.isEmpty()) {
             throw new IllegalStateException("YAML inválido: cucumber.glue está vazio em " + yamlPath);
+        }
+
+        // Validação: features só é obrigatório se o modo legacy estiver ligado.
+        if (useFeaturesProperty && features.isEmpty()) {
+            throw new IllegalStateException("YAML inválido: cucumber.features está vazio em " + yamlPath
+                    + " (useFeaturesProperty=true exige features)");
         }
 
         Properties props = new Properties();
 
         // Cucumber JUnit Platform Engine properties
-        // IMPORTANTE: cucumber.features não aceita a string "[...]" (lista toString).
-        // Precisa ser CSV: "classpath:features/a,classpath:features/b"
-        props.setProperty("cucumber.features", String.join(",", features));
         props.setProperty("cucumber.glue", String.join(",", glue));
 
         if (!isBlank(tags)) {
@@ -77,11 +94,21 @@ public final class ProjectYamlConfigurator {
             props.setProperty("cucumber.plugin", String.join(",", plugins));
         }
 
+        // IMPORTANTE:
+        // Só gerar cucumber.features quando explicitamente habilitado no YAML.
+        // Caso contrário, discovery fica a cargo do Runner (@Suite) e do classpath.
+        if (useFeaturesProperty) {
+            // cucumber.features não aceita a string "[...]" (lista toString).
+            // Precisa ser CSV: "classpath:features/a,classpath:features/b"
+            props.setProperty("cucumber.features", String.join(",", features));
+        }
+
         // (Opcional) deixa registrado qual projeto está rodando
         props.setProperty("framework.project", project);
 
         writeToTargetTestClasses(props);
-        System.out.println("[ProjectYamlConfigurator] Gerado junit-platform.properties para project=" + project);
+        System.out.println("[ProjectYamlConfigurator] Gerado junit-platform.properties para project=" + project
+                + " (useFeaturesProperty=" + useFeaturesProperty + ")");
     }
 
     private static Map<String, Object> loadYamlFromTestResources(String resourcePath) throws IOException {
@@ -182,6 +209,28 @@ public final class ProjectYamlConfigurator {
             if (!v.isBlank()) out.add(v);
         }
         return out;
+    }
+
+    /**
+     * Lê boolean do mapa do cucumber com suporte a aliases.
+     * Aceita valores:
+     * - boolean nativo
+     * - string ("true"/"false")
+     * - número (1/0)
+     */
+    private static boolean readBoolean(Map<String, Object> cucumber, String key, String aliasKey, boolean defaultValue) {
+        if (cucumber == null || cucumber.isEmpty()) return defaultValue;
+
+        Object v = cucumber.containsKey(key) ? cucumber.get(key) : cucumber.get(aliasKey);
+        if (v == null) return defaultValue;
+
+        if (v instanceof Boolean b) return b;
+        if (v instanceof Number n) return n.intValue() != 0;
+
+        String s = String.valueOf(v).trim();
+        if (s.isEmpty()) return defaultValue;
+
+        return Boolean.parseBoolean(s);
     }
 
     private static boolean isBlank(String s) {

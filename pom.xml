@@ -9,13 +9,18 @@
     <artifactId>selenium-framework</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
+    <!-- ========================================================= -->
+    <!-- Properties                                                -->
+    <!-- ========================================================= -->
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.release>17</maven.compiler.release>
 
-        <selenium.version>4.25.0</selenium.version>
+        <!-- Selenium -->
+        <selenium.version>4.40.0</selenium.version>
 
+        <!-- JUnit -->
         <junit.jupiter.version>5.10.3</junit.jupiter.version>
         <junit.platform.version>1.10.3</junit.platform.version>
 
@@ -23,7 +28,6 @@
         <assertj.version>3.26.3</assertj.version>
 
         <cucumber.version>7.18.1</cucumber.version>
-
         <snakeyaml.version>2.2</snakeyaml.version>
 
         <slf4j.version>2.0.16</slf4j.version>
@@ -37,25 +41,29 @@
         <failsafe.version>3.5.2</failsafe.version>
         <jacoco.version>0.8.12</jacoco.version>
         <exec.plugin.version>3.3.0</exec.plugin.version>
-
-        <!-- Antrun para restore/save do history do Allure -->
         <antrun.version>3.1.0</antrun.version>
 
         <failsafe.testFailureIgnore>false</failsafe.testFailureIgnore>
 
-        <!-- Classe real (package correto) -->
-        <yaml.configurator.mainClass>com.rboker.automation.support.ProjectYamlConfigurator</yaml.configurator.mainClass>
+        <!-- YAML configurator -->
+        <yaml.configurator.mainClass>
+            com.rboker.automation.support.ProjectYamlConfigurator
+        </yaml.configurator.mainClass>
 
-        <junit.platform.props.out>${project.build.testOutputDirectory}/junit-platform.properties</junit.platform.props.out>
+        <!-- Allure paths -->
         <allure.results.dir>${project.build.directory}/allure-results</allure.results.dir>
-
-        <!-- diretório persistente do history por projeto (fora do target) -->
-        <allure.history.dir>${project.basedir}/.allure-history</allure.history.dir>
-
-        <!-- NEW: diretório do report (onde o Allure gera o history) -->
         <allure.report.dir>${project.build.directory}/site/allure-maven-plugin</allure.report.dir>
+
+        <!-- Persisted history (OUTSIDE target) -->
+        <allure.history.base.dir>${project.basedir}/.allure-history</allure.history.base.dir>
+
+        <!-- Encoding -->
+        <file.encoding>UTF-8</file.encoding>
     </properties>
 
+    <!-- ========================================================= -->
+    <!-- Dependency Management                                     -->
+    <!-- ========================================================= -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -68,6 +76,9 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- ========================================================= -->
+    <!-- Dependencies                                              -->
+    <!-- ========================================================= -->
     <dependencies>
 
         <!-- Selenium -->
@@ -83,7 +94,7 @@
             </exclusions>
         </dependency>
 
-        <!-- YAML (COMPILA no main também) -->
+        <!-- YAML -->
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
@@ -97,13 +108,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- PicoContainer -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-picocontainer</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-junit-platform-engine</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit Jupiter -->
+        <!-- JUnit -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -111,7 +129,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit Platform Suite -->
+        <!-- Suite API/Engine -->
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-suite-api</artifactId>
@@ -156,7 +174,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Allure -->
+        <!-- Allure (Cucumber) -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-cucumber7-jvm</artifactId>
@@ -164,15 +182,11 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>io.qameta.allure</groupId>
-            <artifactId>allure-junit-platform</artifactId>
-            <version>${allure.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
+    <!-- ========================================================= -->
+    <!-- Build                                                     -->
+    <!-- ========================================================= -->
     <build>
         <plugins>
 
@@ -183,6 +197,7 @@
                 <version>${compiler.version}</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
                 </configuration>
             </plugin>
 
@@ -200,8 +215,6 @@
                         </goals>
                         <configuration>
                             <propertyName>argLine</propertyName>
-                            <destFile>${project.build.directory}/jacoco.exec</destFile>
-                            <append>true</append>
                         </configuration>
                     </execution>
                 </executions>
@@ -214,91 +227,29 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <useModulePath>false</useModulePath>
-                    <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
+                    <argLine>${argLine} -Dfile.encoding=${file.encoding} -Dsun.jnu.encoding=${file.encoding}</argLine>
                     <includes>
                         <include>**/*UnitTest.java</include>
                     </includes>
+                    <rerunFailingTestsCount>0</rerunFailingTestsCount>
                 </configuration>
             </plugin>
 
         </plugins>
     </build>
 
+    <!-- ========================================================= -->
+    <!-- Profile UI                                                -->
+    <!-- ========================================================= -->
     <profiles>
 
         <profile>
             <id>ui</id>
+
             <build>
                 <plugins>
 
-                    <!-- 1) RESTORE history antes dos testes (Trend) -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-antrun-plugin</artifactId>
-                        <version>${antrun.version}</version>
-                        <executions>
-
-                            <execution>
-                                <id>allure-history-restore</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target>
-                                        <property name="projectId" value="${project}"/>
-
-                                        <condition property="projectId" value="default" else="${projectId}">
-                                            <equals arg1="${projectId}" arg2=""/>
-                                        </condition>
-
-                                        <property name="historySource" value="${allure.history.dir}/${projectId}/history"/>
-                                        <property name="historyTarget" value="${allure.results.dir}/history"/>
-
-                                        <echo message="[AllureHistory] Restore: ${historySource} -> ${historyTarget}"/>
-
-                                        <mkdir dir="${allure.results.dir}"/>
-
-                                        <copy todir="${historyTarget}" overwrite="true" verbose="true" failonerror="false">
-                                            <fileset dir="${historySource}" includes="**/*"/>
-                                        </copy>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                            <!-- 4) SAVE history no final: copia do REPORT (onde o Allure realmente gera history/) -->
-                            <execution>
-                                <id>allure-history-save</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>run</goal>
-                                </goals>
-                                <configuration>
-                                    <target>
-                                        <property name="projectId" value="${project}"/>
-
-                                        <condition property="projectId" value="default" else="${projectId}">
-                                            <equals arg1="${projectId}" arg2=""/>
-                                        </condition>
-
-                                        <property name="historyFromReport" value="${allure.report.dir}/history"/>
-                                        <property name="historyDest" value="${allure.history.dir}/${projectId}/history"/>
-
-                                        <echo message="[AllureHistory] Save: ${historyFromReport} -> ${historyDest}"/>
-
-                                        <mkdir dir="${historyDest}"/>
-
-                                        <copy todir="${historyDest}" overwrite="true" verbose="true" failonerror="false">
-                                            <fileset dir="${historyFromReport}" includes="**/*"/>
-                                        </copy>
-                                    </target>
-                                </configuration>
-                            </execution>
-
-                        </executions>
-                    </plugin>
-
-                    <!-- 2) Gera junit-platform.properties a partir do YAML -->
+                    <!-- YAML → junit-platform.properties -->
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
@@ -313,21 +264,103 @@
                                 <configuration>
                                     <mainClass>${yaml.configurator.mainClass}</mainClass>
                                     <classpathScope>test</classpathScope>
-
-                                    <systemProperties>
-                                        <systemProperty>
-                                            <key>allure.results.directory</key>
-                                            <value>${allure.results.dir}</value>
-                                        </systemProperty>
-                                    </systemProperties>
-
-                                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
 
-                    <!-- Failsafe -->
+                    <!-- Restore + Save Allure history (Ant) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>${antrun.version}</version>
+                        <executions>
+
+                            <!-- RESTORE -->
+                            <execution>
+                                <id>allure-history-restore</id>
+                                <phase>pre-integration-test</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="allure-history-restore">
+
+                                        <condition property="allure.project.id" value="${project}" else="default">
+                                            <and>
+                                                <isset property="project"/>
+                                                <not>
+                                                    <equals arg1="${project}" arg2=""/>
+                                                </not>
+                                            </and>
+                                        </condition>
+
+                                        <echo message="[ALLURE] allure.project.id=${allure.project.id}"/>
+                                        <echo message="[ALLURE] resultsDir=${allure.results.dir}"/>
+                                        <echo message="[ALLURE] historyStore=${allure.history.base.dir}/${allure.project.id}/history"/>
+
+                                        <mkdir dir="${allure.results.dir}"/>
+                                        <mkdir dir="${allure.results.dir}/history"/>
+
+                                        <!-- categories.json (opcional) -->
+                                        <copy file="${project.basedir}/src/test/resources/categories.json"
+                                              tofile="${allure.results.dir}/categories.json"
+                                              overwrite="true"
+                                              failonerror="false"/>
+
+                                        <!-- history (opcional): copia o que existir, sem falhar -->
+                                        <copy todir="${allure.results.dir}/history"
+                                              overwrite="true"
+                                              failonerror="false">
+                                            <fileset dir="${allure.history.base.dir}/${allure.project.id}/history"
+                                                     erroronmissingdir="false"/>
+                                        </copy>
+
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                            <!-- SAVE (depois do report) -->
+                            <execution>
+                                <id>allure-history-save</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="allure-history-save">
+
+                                        <condition property="allure.project.id" value="${project}" else="default">
+                                            <and>
+                                                <isset property="project"/>
+                                                <not>
+                                                    <equals arg1="${project}" arg2=""/>
+                                                </not>
+                                            </and>
+                                        </condition>
+
+                                        <echo message="[ALLURE] allure.project.id=${allure.project.id}"/>
+                                        <echo message="[ALLURE] saveFrom=${allure.report.dir}/history"/>
+                                        <echo message="[ALLURE] saveTo=${allure.history.base.dir}/${allure.project.id}/history"/>
+
+                                        <mkdir dir="${allure.history.base.dir}/${allure.project.id}/history"/>
+
+                                        <!-- copia o history do report se existir (sem falhar se não existir) -->
+                                        <copy todir="${allure.history.base.dir}/${allure.project.id}/history"
+                                              overwrite="true"
+                                              failonerror="false">
+                                            <fileset dir="${allure.report.dir}/history"
+                                                     erroronmissingdir="false"/>
+                                        </copy>
+
+                                    </target>
+                                </configuration>
+                            </execution>
+
+                        </executions>
+                    </plugin>
+
+                    <!-- Failsafe (UI / Cucumber) -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>
@@ -335,12 +368,16 @@
                         <configuration>
                             <useModulePath>false</useModulePath>
                             <testFailureIgnore>${failsafe.testFailureIgnore}</testFailureIgnore>
-                            <argLine>@{argLine} -Dfile.encoding=UTF-8 -Djava.util.logging.config.file="${project.basedir}/src/test/resources/logging.properties"</argLine>
+
+                            <argLine>${argLine} -Dfile.encoding=${file.encoding} -Dsun.jnu.encoding=${file.encoding}</argLine>
+
                             <systemPropertyVariables>
                                 <allure.results.directory>${allure.results.dir}</allure.results.directory>
                             </systemPropertyVariables>
+
+                            <rerunFailingTestsCount>0</rerunFailingTestsCount>
                             <includes>
-                                <include>**/RunCucumberTest.java</include>
+                                <include>**/UiTestRunner.java</include>
                             </includes>
                         </configuration>
                         <executions>
@@ -353,14 +390,18 @@
                         </executions>
                     </plugin>
 
-                    <!-- 3) Allure report: precisa rodar ANTES do save do history -->
+                    <!-- Allure report (pós ITs) -->
                     <plugin>
                         <groupId>io.qameta.allure</groupId>
                         <artifactId>allure-maven</artifactId>
                         <version>${allure.maven.version}</version>
+                        <configuration>
+                            <resultsDirectory>${allure.results.dir}</resultsDirectory>
+                            <reportDirectory>${allure.report.dir}</reportDirectory>
+                        </configuration>
                         <executions>
                             <execution>
-                                <id>allure-report-post-it</id>
+                                <id>allure-report</id>
                                 <phase>post-integration-test</phase>
                                 <goals>
                                     <goal>report</goal>
@@ -369,7 +410,7 @@
                         </executions>
                     </plugin>
 
-                    <!-- Disable unit tests -->
+                    <!-- Disable unit tests in UI profile -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>

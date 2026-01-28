@@ -24,8 +24,8 @@ cucumber:
   features:
     - "classpath:features/wikipedia"
   glue:
-    - "com.rboker.automation.tests.bdd.steps.wikipedia"
-    - "com.rboker.automation.tests.bdd.hooks"
+    - "com.rboker.automation.projects.wikipedia.ui.steps"
+    - "com.rboker.automation.hooks"
   tags: "@ui and @wikipedia"
   plugins:
     - "pretty"
