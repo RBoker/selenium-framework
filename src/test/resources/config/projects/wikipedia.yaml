@@ -24,8 +24,8 @@ cucumber:
   features:
     - "classpath:features/wikipedia"
   glue:
-    - "com.rboker.automation.tests.bdd.steps.wikipedia"
-    - "com.rboker.automation.tests.bdd.hooks"
+    - "com.rboker.automation.projects.wikipedia.ui.steps"
+    - "com.rboker.automation.hooks"
   tags: "@ui and @wikipedia"
   plugins:
     - "pretty"
@@ -33,6 +33,10 @@ cucumber:
 
 evidence:
   screenshot:
-    mode: FAILED_ONLY   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    # NONE = não gera evidência
+    # FAILED_ONLY = gera apenas em falha
+    # EACH_STEP = gera a cada passo (mais pesado)
+    # EACH_SCENARIO = gera ao final de cada cenário
+    mode: FAILED_ONLY
     attachToAllure: true
     saveToFile: true

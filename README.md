@@ -1,221 +1,361 @@
 # Selenium Framework (Java)
 
-Framework de automação de testes em **Java + Selenium**, projetado para separar com clareza:
+Framework de automação de testes **UI / E2E** em **Java + Selenium**, projetado para ser **simples de usar por analistas**, **robusto para CI/CD** e **flexível para múltiplos projetos** dentro do mesmo repositório.
 
-* **Testes unitários do framework**
-* **Testes de UI (end-to-end)**
-
-com **execução isolada**, **controle de logging**, **evidência automática em falha** e **gate de cobertura com JaCoCo**.
-
-> 🎯 Objetivo principal: servir como **base sólida, limpa e evolutiva** para projetos de automação UI em Java, suportando **múltiplos projetos**, **relatórios independentes** e **execução previsível em ambiente local ou CI**.
+O foco do framework é **organização**, **previsibilidade de execução**, **observabilidade (logs + evidências)** e **relatórios ricos com histórico (Allure)**.
 
 ---
 
-## 📌 Principais características
+## 🎯 Objetivos do framework
 
-* ✅ Java 17 (LTS)
-* ✅ Selenium 4
-* ✅ Maven (Surefire + Failsafe)
-* ✅ JUnit 5 (testes unitários)
-* ✅ Cucumber 7 + JUnit Platform (testes de UI)
-* ✅ JaCoCo com **gate de cobertura (70%)**
-* ✅ Execução separada por **Maven Profiles**
-* ✅ Evidência automática (screenshot) em falha
-* ✅ Page Objects com `BasePage`
-* ✅ `DriverManager` seguro (sem driver zumbi)
-* ✅ `WaitFactory` centralizado
-* ✅ `ElementActions` para interações resilientes
-* ✅ Logging controlado (Logback + logging.properties)
-* ✅ Logs limpos (sem warnings ruidosos do Selenium)
-* ✅ Integração com **Allure Report** (mesmo com falha de testes)
+* Facilitar a criação e manutenção de testes UI
+* Suportar **múltiplos projetos** (sites/sistemas) no mesmo framework
+* Executar testes de forma **isolada por projeto**
+* Gerar **relatórios Allure com histórico e trend**
+* Ser facilmente integrado a pipelines de **CI/CD**
+* Evitar acoplamentos frágeis e mágicas escondidas
 
 ---
 
-## 🧱 Estrutura do projeto
+## 🧰 Stack tecnológica
+
+* **Java 17**
+* **Selenium 4**
+* **Maven** (Surefire + Failsafe)
+* **Cucumber 7** (BDD)
+* **JUnit Platform**
+* **Allure Report** (com history e trend)
+* **SnakeYAML** (configuração por projeto)
+* **SLF4J + Logback** (logging)
+* **JaCoCo** (cobertura de código)
+
+---
+
+## 📁 Estrutura do projeto
 
 ```
 src
 ├── main
 │   └── java
 │       └── com.rboker.automation
-│           ├── config        # Leitura de System Properties (-D)
-│           └── core          # DriverManager, WaitFactory, ElementActions, ScreenshotUtil
+│           ├── core            # Driver, waits, base classes
+│           ├── config          # Configuração central do framework
+│           └── support         # Utilidades e helpers
 │
-└── test
-    ├── java
-    │   └── com.rboker.automation.tests
-    │       ├── unit          # Testes unitários do framework (JUnit 5)
-    │       └── bdd           # Steps e runners Cucumber (UI)
-    │
-    └── resources
-        ├── features          # Arquivos .feature (Cucumber)
-        ├── logback-test.xml  # Logging SLF4J / Logback
-        └── logging.properties# Logging JUL (Selenium / WebDriver)
+├── test
+│   ├── java
+│   │   └── com.rboker.automation.projects
+│   │       └── wikipedia
+│   │           ├── ui
+│   │           │   ├── pages   # Page Objects
+│   │           │   ├── steps   # Steps do Cucumber
+│   │           │   └── runner  # UiTestRunner
+│   │
+│   └── resources
+│       ├── features            # Features do Cucumber (BDD)
+│       │   └── wikipedia
+│       │
+│       ├── config
+│       │   └── projects        # YAML por projeto
+│       │       └── wikipedia.yaml
+│       │
+│       └── allure
+│           └── categories.json # Categorias do Allure
+│
+└── .allure-history              # Histórico persistido do Allure (por projeto)
 ```
 
 ---
 
-## ⚙️ Configuração via `-D`
+## 🧩 Conceito de multi-projeto
 
-O framework é configurado **exclusivamente por System Properties**, permitindo reutilização do mesmo binário para diferentes projetos e ambientes.
+O framework suporta **vários projetos** (sites ou sistemas) usando o mesmo código-base.
 
-| Propriedade | Descrição                             | Default                        |
-| ----------- | ------------------------------------- | ------------------------------ |
-| `project`   | Identificador lógico do projeto       | `default`                      |
-| `baseUrl`   | URL base da aplicação                 | `https://example.com`          |
-| `browser`   | Browser (`chrome`, `firefox`, `edge`) | `chrome`                       |
-| `headless`  | Executa em modo headless              | `false`                        |
-| `remote`    | Usa Selenium Grid                     | `false`                        |
-| `remoteUrl` | URL do Grid                           | `http://localhost:4444/wd/hub` |
-| `timeout`   | Timeout padrão (segundos)             | `10`                           |
-
-Exemplo:
+Cada projeto é identificado por um **ID**, passado via linha de comando:
 
 ```bash
-mvn clean verify -Pui \
-  -Dproject=wikipedia \
-  -DbaseUrl=https://www.wikipedia.org \
-  -Dbrowser=chrome
+-Dproject=wikipedia
 ```
+
+Esse ID é usado para:
+
+* Resolver o **arquivo YAML do projeto**
+* Selecionar **features e cenários**
+* Separar o **histórico do Allure**
 
 ---
 
-## 🧪 Tipos de testes
+## ⚙️ Configuração por projeto (YAML)
 
-### 🔹 Testes Unitários (framework)
+Cada projeto possui um arquivo YAML em:
 
-* 📁 Pacote: `com.rboker.automation.tests.unit`
-* 🧪 Framework: **JUnit 5**
-* ▶️ Executados pelo **maven-surefire-plugin**
-* 📊 Cobertos por **JaCoCo**
-* 🚦 Gate de cobertura: **70%**
+```
+src/test/resources/config/projects/<project>.yaml
+```
 
-Execução:
+Exemplo (`wikipedia.yaml`):
+
+```yaml
+baseUrl: https://www.wikipedia.org
+browser: chrome
+headless: false
+
+cucumber:
+  tags: "@ui and @wikipedia"
+```
+
+### O que pode ser configurado via YAML
+
+* URL base do sistema
+* Browser
+* Headless / não headless
+* Tags do Cucumber
+* Outras flags específicas do projeto
+
+O YAML é lido **antes da execução** e convertido automaticamente em configurações do JUnit Platform.
+
+---
+
+## 🧪 Execução dos testes
+
+### Execução padrão (UI)
 
 ```bash
-mvn clean test
+mvn clean verify -Pui -Dproject=wikipedia
 ```
 
-Relatório de cobertura:
+O que acontece nesse comando:
 
-```
-target/site/jacoco/index.html
-```
+1. Lê o YAML do projeto
+2. Gera `junit-platform.properties`
+3. Restaura histórico do Allure (se existir)
+4. Executa os testes UI (Failsafe)
+5. Gera o relatório Allure
+6. Persiste o histórico para a próxima execução
 
 ---
 
-### 🔹 Testes de UI (Selenium + Cucumber)
+## 🏷️ Tags e cenários
 
-* 📁 Pacote: `com.rboker.automation.tests.bdd`
-* 🧪 Frameworks:
+Os cenários são filtrados por **tags do Cucumber**, definidas no YAML:
 
-  * **Cucumber 7**
-  * **JUnit Platform**
-* ▶️ Executados pelo **maven-failsafe-plugin**
-* 🔒 Totalmente isolados dos testes unitários
-* 🧹 Não afetam métricas de cobertura
-
-Execução padrão:
-
-```bash
-mvn clean verify -Pui \
-  -Dproject=wikipedia \
-  -DbaseUrl=https://www.wikipedia.org
+```yaml
+cucumber:
+  tags: "@ui and @wikipedia"
 ```
 
-### ▶️ Executar e abrir relatório Allure (mesmo com falha)
+É **normal** o Maven exibir warnings como:
 
-```bash
-mvn clean verify -Pui \
-  -Dproject=wikipedia \
-  -Dfailsafe.testFailureIgnore=true
-
-mvn allure:serve
+```
+Tests run: 17, Failures: 0, Errors: 0, Skipped: 15
 ```
 
-> ⚠️ Importante: a flag `-Dmaven.test.failure.ignore=true` **não se aplica ao Failsafe**. Para testes de UI, use sempre `failsafe.testFailureIgnore`.
+Isso acontece porque:
+
+* O JUnit descobre todos os cenários
+* Apenas os que casam com as tags são executados
+
+⚠️ Isso **não indica erro**.
 
 ---
 
-## 📋 Logging
+## 📊 Relatórios Allure (com histórico e trend)
 
-O framework adota **separação explícita de responsabilidades de logging**.
+### Geração automática
 
-### 🔹 Logback (SLF4J)
-
-Arquivo:
+O relatório Allure é gerado automaticamente ao final da execução:
 
 ```
-src/test/resources/logback-test.xml
+target/site/allure-maven-plugin/index.html
 ```
 
-Responsável por:
+### Histórico e Trend
 
-* Logs do framework
-* Logs de testes
-* Logs de negócio
-
-### 🔹 logging.properties (JUL)
-
-Arquivo:
+O framework mantém histórico persistido fora do `target`:
 
 ```
-src/test/resources/logging.properties
+.allure-history/<project>/history
 ```
 
-Responsável por:
+Fluxo:
 
-* Selenium
-* WebDriver
-* ChromeDriver / GeckoDriver
-
-➡️ Benefício direto: eliminação de warnings ruidosos como `Unable to find CDP implementation`.
+1. Antes dos testes: histórico é restaurado para `allure-results`
+2. Após o report: novo histórico é salvo
+3. A partir da **segunda execução**, o **Trend** aparece no Allure
 
 ---
 
-## 📸 Evidências em falha (UI)
+## 🧾 Categories (Allure)
 
-Em qualquer falha de teste UI:
-
-* 📷 Screenshot automático
-* 📁 Diretório:
+O arquivo de categorias fica em:
 
 ```
-target/screenshots
+src/test/resources/allure/categories.json
 ```
 
-* 🧾 Nome do arquivo contém nome do cenário + timestamp
+Ele permite agrupar falhas no relatório por tipo (ex.: timeout, assertion, etc).
 
 ---
 
-## 🚦 Cobertura de código (JaCoCo)
+## 📸 Evidências (Screenshots)
 
-* Aplicada **somente aos testes unitários**
-* Classes acopladas ao Selenium são excluídas
-* Build falha automaticamente se cobertura < **70%**
-
----
-
-## 🚀 Estado do projeto
-
-✅ **Fase de suporte a múltiplos projetos e relatórios: CONCLUÍDA**
-
-O framework está pronto para:
-
-* Reutilização entre projetos
-* Execução local e em CI
-* Evolução incremental sem refatorações estruturais
+* Screenshots são gerados automaticamente em **falha**
+* Integrados ao Allure
+* Associados ao cenário que falhou
 
 ---
 
-## 🤝 Contribuição
+## 🧠 Logging
 
-Sugestões, issues e PRs são bem-vindos.
-
-> Mantenha o padrão de separação entre **framework**, **testes unitários** e **testes de UI**.
+* Logging via **SLF4J + Logback**
+* Logs limpos (sem ruído excessivo do Selenium)
+* Fácil ajuste de nível (`INFO`, `DEBUG`, etc.)
 
 ---
 
-## 📄 Licença
+## 🔬 Testes unitários do framework
 
-Uso livre para fins educacionais e profissionais.
+* Testes unitários rodam com **Surefire**
+* Testes UI rodam com **Failsafe**
+* No profile `ui`, os testes unitários são automaticamente desabilitados
+
+---
+
+## 📈 Cobertura de código (JaCoCo)
+
+* JaCoCo integrado
+* Coleta cobertura do código do framework
+* Pronto para ser usado como **gate de qualidade** no CI
+
+---
+
+## 🧱 Boas práticas adotadas
+
+* Page Object Model
+* Separação clara entre framework e testes
+* Configuração explícita (nada escondido)
+* Paths previsíveis
+* Build reproduzível
+
+---
+
+## 🚀 Criando um novo projeto
+
+Checklist rápido:
+
+1. Criar `src/test/resources/config/projects/<project>.yaml`
+2. Criar features em `src/test/resources/features/<project>/`
+3. Criar steps/pages em `com.rboker.automation.projects.<project>`
+4. Executar:
+
+   ```bash
+   mvn clean verify -Pui -Dproject=<project>
+   ```
+
+---
+
+## 🧯 Troubleshooting (Problemas comuns)
+
+### ❌ Nenhum teste executa
+
+**Sintoma**:
+
+* Build passa, mas nenhum cenário roda
+
+**Possíveis causas**:
+
+* Tags configuradas no YAML não correspondem às tags das features
+* `-Dproject` não informado ou incorreto
+
+**Como verificar**:
+
+* Confira o YAML em `src/test/resources/config/projects/<project>.yaml`
+* Valide as tags com as features
+
+---
+
+### ⚠️ Muitos testes aparecem como *Skipped*
+
+**Exemplo**:
+
+```
+Tests run: 17, Failures: 0, Errors: 0, Skipped: 15
+```
+
+**Explicação**:
+
+* O JUnit Platform descobre todos os cenários
+* Apenas os que casam com as tags do projeto são executados
+
+✔️ **Comportamento esperado com Cucumber + JUnit Platform**
+
+---
+
+### 📉 Trend não aparece no Allure
+
+**Importante**:
+
+* O Trend só aparece a partir da **segunda execução**
+
+**Checklist**:
+
+1. Execute o mesmo comando duas vezes
+2. Verifique se existe:
+
+   ```
+   .allure-history/<project>/history
+   ```
+3. Confirme que o restore ocorre antes do report
+
+---
+
+### 📂 categories.json não é reconhecido
+
+**Caminho esperado**:
+
+```
+src/test/resources/allure/categories.json
+```
+
+O arquivo é copiado automaticamente para `allure-results` antes da execução.
+
+---
+
+## 📌 Observações finais
+
+* O Trend do Allure aparece a partir da **2ª execução**
+* O diretório `.allure-history` **não deve ser apagado** entre execuções
+* O framework foi desenhado para evoluir sem quebrar contratos
+
+---
+
+## 🧑‍💻 Público-alvo do framework
+
+Este framework foi desenhado para:
+
+* Analistas de QA
+* Engenheiros de Automação
+* Times que precisam executar testes UI com rapidez e previsibilidade
+
+Sem exigir conhecimento profundo de Maven ou JUnit para o uso básico.
+
+---
+
+## 🤝 Contribuição e evolução
+
+Este framework é uma base sólida para:
+
+* automação UI corporativa
+* aprendizado
+* entrevistas técnicas
+* projetos reais
+
+Evoluções são bem-vindas, desde que mantenham:
+
+* clareza
+* simplicidade
+* previsibilidade
+
+---
+
+**Autor:** Roberto Boker

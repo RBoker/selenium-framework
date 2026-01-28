@@ -56,6 +56,10 @@ cucumber:
     - "io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm"
 evidence:
   screenshot:
-    mode: FAILED_ONLY   # NONE | FAILED_ONLY | EACH_STEP | EACH_SCENARIO
+    # NONE = não gera evidência
+    # FAILED_ONLY = gera apenas em falha
+    # EACH_STEP = gera a cada passo (mais pesado)
+    # EACH_SCENARIO = gera ao final de cada cenário
+    mode: FAILED_ONLY
     attachToAllure: true
     saveToFile: true
